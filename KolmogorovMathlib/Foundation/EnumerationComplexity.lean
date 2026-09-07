@@ -55,6 +55,7 @@ theorem distinctAt_mono (E : StagedEnumeration) (t : ℕ) :
   dsimp [distinctAt]
   rw [← hl, List.eraseDups_append]
   exact List.prefix_append _ _
+#print axioms distinctAt_mono
 
 theorem prefix_of_le (E : StagedEnumeration) {t1 t2 : ℕ} (hle : t1 ≤ t2) :
     E.distinctAt t1 <+: E.distinctAt t2 := by
