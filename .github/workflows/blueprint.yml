@@ -40,11 +40,15 @@ jobs:
         with:
           fetch-depth: 0 # Fetch all history for all branches and tags
 
-      - name: Build and lint project
+      - name: Build project
         uses: leanprover/lean-action@434f25c2f80ded67bba02502ad3a86f25db50709 # 2025-07-02
         with:
           build: true
-          lint: true
+          # lint is off because this project configures no lint driver, and
+          # `lake check-lint` then fails the whole step before anything is built.
+          # Mathlib's standard linter set already runs during `lake build`, via
+          # weak.linter.mathlibStandardSet in lakefile.toml.
+          lint: false
           # mk_all-check is off on purpose: `lake exe mk_all` regenerates the
           # library root files without their copyright header, and we keep the
           # header on KolmogorovMathlib.lean.  Run `lake exe mk_all --check`
