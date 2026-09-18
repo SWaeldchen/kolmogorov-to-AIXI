@@ -1,7 +1,10 @@
 name = "kolmogorov_complexity"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["KolmogorovMathlib"]
+# Both libraries are default targets: `lake exe checkdecls`, which the blueprint CI
+# runs, imports every module of every library declared here, so a library that the
+# default build skips makes it fail with "unknown module prefix".
+defaultTargets = ["KolmogorovMathlib", "Gacs_Chapter_2"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`

@@ -233,6 +233,14 @@ Now~\eqref{howsharp} follows immediately from~\eqref{eq:howsharp}.
 
 %%%% ===================== SECTION 1.4 Simple properties of information =====================
 
+Let us elaborate on the upper bound of Theorem~\ref{thm:upbd}. For any string
+\( x \in \dS_{r} \) of length \( n \), we have
+\begin{equation}  \label{eq:binupbd}
+C(x) \lea n\log r + 2 \log r.
+\end{equation}
+In particular, for any binary string \( x \), we have \( C(x) \lea \len{x} \).
+
+
 
 \section{Simple properties of information }
 The results of this section are all consequences of one move: given an interpreter, build
@@ -330,6 +338,14 @@ C(U_{p}(x,y)) &\lea  J(C(x)) + C(y \mvert x) + J(\len{p})
  	C(x,y) \lea J(C(x)) + C(y).
  \]
  \end{corollary}
+
+This corollary implies the following continuity property of the function \( C(n) \):
+for any natural numbers \( n,h \), we have
+\begin{equation}
+|C(n+h)-C(n)| \lea J(\log h). \label{eq:continui}
+\end{equation}
+Indeed, \( n+h \) is a recursive function of \( n \) and \( h \).
+
 
 % Gacs source line 1205
 \begin{theorem}
@@ -1245,6 +1261,15 @@ with $K(p) \ge n-c_{1}-1$ is at least $d_{n}/2$.
   We finish the proof making $c$ to be the maximium of $c_{0}$ and $c_{1}+1$.
  \end{proof}
 
+What can be said about the complexity of a binary string of length \( n \)? The
+estimate \( K(x) \lea n + 2\log n \) was mentioned earlier; the same argument gives the
+stronger estimate
+\begin{equation} K(x) \lea \len{x} + K(\len{x}). \label{eq:monbd}
+\end{equation}
+In Lean this is \texttt{KPPlain\_le\_length\_add\_KPPlain\_length}, and it is the bound that
+Theorem~\ref{thm:monbd} below sharpens into an equality for the monotone majorant.
+
+
 % Gacs source line 2189
  \begin{definition}
   \label{def:Kplus}
@@ -1322,6 +1347,14 @@ optimal s.d.~interpreter $T$, and let us write
   K(n,t)=K_{\cT}(n,t).
  \end{align*}
  \end{definition}
+
+With these definitions, for each self-delimiting Turing machine \( \cM \) there are
+constants \( m_{0},m_{1} \) with
+\begin{equation}  \label{eq:fastopt}
+K(n,m_{0}t) \le K_{\cM}(n,t) + m_{1}.
+\end{equation}
+The function \( K(n;t) \) is nonincreasing in \( t \).
+
 
 % Gacs source line 2275
 \begin{proof}[Proof of Theorem \protect\ref{thm:infsharp}]
