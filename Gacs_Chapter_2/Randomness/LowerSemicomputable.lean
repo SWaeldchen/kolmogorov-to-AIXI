@@ -37,7 +37,7 @@ Also here: generic fuel-bounded halting for an r.e. witness on any `Primcodable`
 and three small `IsRE` combinators.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 open scoped ENNReal
 open Nat.Partrec (Code)
@@ -163,17 +163,17 @@ section RE
 
 variable {α β : Type*} [Primcodable α] [Primcodable β]
 
-theorem IsRE.congr {R R' : α → Prop} (h : IsRE R) (e : ∀ a, R a ↔ R' a) : IsRE R' := by
+theorem _root_.Kolmogorov.IsRE.congr {R R' : α → Prop} (h : IsRE R) (e : ∀ a, R a ↔ R' a) : IsRE R' := by
   obtain ⟨f, hf, hdom⟩ := h
   exact ⟨f, hf, fun a ↦ (hdom a).trans (e a)⟩
 
-theorem IsRE.comp {R : β → Prop} (h : IsRE R) {g : α → β} (hg : Computable g) :
+theorem _root_.Kolmogorov.IsRE.comp {R : β → Prop} (h : IsRE R) {g : α → β} (hg : Computable g) :
     IsRE (fun a ↦ R (g a)) := by
   obtain ⟨f, hf, hdom⟩ := h
   exact ⟨fun a ↦ f (g a), hf.comp hg, fun a ↦ hdom (g a)⟩
 
 /-- An r.e. relation intersected with a decidable, computable one is r.e. -/
-theorem IsRE.inter_decidable {R : α → Prop} (h : IsRE R) (P : α → Prop) [DecidablePred P]
+theorem _root_.Kolmogorov.IsRE.inter_decidable {R : α → Prop} (h : IsRE R) (P : α → Prop) [DecidablePred P]
     (hP : Computable (fun a ↦ decide (P a))) : IsRE (fun a ↦ P a ∧ R a) := by
   obtain ⟨f, hf, hdom⟩ := h
   refine ⟨fun a ↦ (Part.ofOption (if P a then some () else none)).bind (fun _ ↦ f a), ?_, ?_⟩
@@ -359,4 +359,4 @@ theorem IsLSC₁.dyadic_lt_isRE {t : BitString → ℝ≥0∞} (ht : IsLSC₁ t)
     (P := fun (q : BitString × (ℕ × ℕ)) (s : ℕ) ↦ q.2.1 * 2 ^ s < a s q.1 * 2 ^ q.2.2) hP).congr
     (fun q ↦ (hiff q).symm)
 
-end Kolmogorov
+end Kolmogorov.Randomness

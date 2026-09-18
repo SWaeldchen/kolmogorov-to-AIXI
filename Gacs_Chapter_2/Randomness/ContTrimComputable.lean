@@ -22,7 +22,7 @@ its irreducible definition and writing the `Finset.range` supremum as a list fol
 in `Primrec` avoids the `Computable` unification timeouts met elsewhere in this project.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 /-! ### The enumeration is primitive recursive -/
 
@@ -314,4 +314,4 @@ theorem trimSt_enumApprox_primrec :
 
 end Uniform
 
-end Kolmogorov
+end Kolmogorov.Randomness

@@ -1,7 +1,1366 @@
-% In this file you should put the actual content of the blueprint.
-% It will be used both by the web and the print version.
-% It should *not* include the \begin{document}
+% Content of the blueprint for Chapter 1 of
+% Peter Gacs, "Descriptional Complexity and Randomness" (arXiv:2105.04704).
 %
-% If you want to split the blueprint content into several files then
-% the current file can be a simple sequence of \input. Otherwise It
-% can start with a \section or \chapter for instance.
+% Statements and proofs are his, reproduced with the author's permission.
+% Each node carries the name of the corresponding Lean declaration.  Where our
+% formalized statement departs from the printed one, a formalization note says so.
+%
+% This file is assembled to keep his numbering: within each section, theorems run
+% on one counter and everything else on another, exactly as in the manuscript.
+
+\chapter{Complexity}
+
+This blueprint follows Chapter 1 of Peter G\'acs, \emph{Descriptional Complexity and
+Randomness}~\cite{Gacs2021}, and records how each of its results is formalized in Lean 4
+on top of Mathlib. The statements and their proofs are his, reproduced with his
+permission; the annotations, the dependency edges and the formalization notes are ours.
+
+Every numbered result carries the number it has in his manuscript, so the two can be read
+side by side. A green node is formalized. Where the Lean statement is not a literal
+transcription of the printed one, a \emph{formalization note} follows it and says what
+changed and why. Two topics are stated here without being formalized: the clauses of
+Proposition 1.5.5 about functions of a real variable, and Theorem 1.6.4 on exact
+domination.
+
+\section{Introduction}
+
+His first two sections are informal. Section 1.1 motivates description complexity and
+surveys the results proved later, and Section 1.2 fixes notation. Neither contains a
+result that the formalization has to reproduce, so they appear here only to keep the
+section numbering aligned with the manuscript. The notation we do rely on is recalled
+below.
+
+\section{Notation }
+
+We write $\dS$ for the set of finite binary strings and $\len{x}$ for the length of a
+string $x$. Strings are paired by a computable encoding, written $\ang{x,y}$, and
+$J(n) = n + 2\log n$ is the cost of making a string of length $n$ self-delimiting. The
+relation $f \lea g$ means that $f \le g + c$ for a constant $c$ that does not depend on
+the arguments, and $f \eqa g$ means that both $f \lea g$ and $g \lea f$ hold. Their
+multiplicative counterparts $\lem$ and $\eqm$ mean the same up to a constant factor.
+
+In Lean, a string is a \texttt{List Bool}, written \texttt{BitString}, and a decompressor
+is a partial recursive map \texttt{Map}. Complexities are valued in $\dN \cup \setof{\infty}$,
+and every quantity that his text writes as a negative logarithm is carried multiplicatively
+in $[0,\infty]$ instead.
+
+
+
+\section{Kolmogorov complexity }
+The complexity of a string is the length of its shortest description under a fixed
+optimal interpreter. The invariance theorem is what makes the definition well posed, and
+everything later in the chapter rests on it.
+
+
+% Gacs source line 796
+ \begin{definition}
+  \label{def:interpreter}
+  \lean{Kolmogorov.Map}
+  \leanok
+A partial recursive 
+function \( A \) from \( \dS_{2} \times \dS \) to \( \dS \) will be called a (binary)
+\df{interpreter}, or \df{decoder}. 
+We will often refer to its first argument as the \df{program}, or \df{code}. 
+ \end{definition}
+
+% Gacs source line 807
+ \begin{definition}
+  \label{def:complexity}
+  \lean{Kolmogorov.condK, Kolmogorov.plainK}
+  \leanok
+  \uses{def:interpreter}
+For any binary interpreter \( A \) and strings \( x,y \in \dS \), the number
+ \[
+   C_A(x \mvert y) = \min \setof{ \len{p} : A(p,y) = x }
+ \] 
+is called the \df{conditional Kolmogorov-complexity of \( x \) given
+\( y \), with respect to the interpreter \( A \) }. 
+(If the set after the ``min'' is empty, then the minimum is \( \infty \)). 
+We write  \( C_A(x)=C_A(x \mvert \Lg) \).  
+ \end{definition}
+
+% Gacs source line 830
+ \begin{definition}
+  \label{def:optimal}
+  \lean{Kolmogorov.isOptimalConditional}
+  \leanok
+  \uses{def:interpreter, def:complexity}
+A binary p.r.~interpreter \( U \) is called \df{optimal}
+if for any binary p.r.~interpreter \( A \) there is a constant \( c < \infty \) such that 
+for all \( x,y \) we have
+ \begin{equation}  
+C_U(x \mvert y) \le C_A(x \mvert y) + c. \label{eq:opt}
+ \end{equation}
+ \end{definition}
+
+% Gacs source line 839
+\begin{theorem}[Invariance Theorem]
+  \lean{Kolmogorov.existsIsOptimalConditional}
+  \leanok
+  \uses{def:optimal} \label{thm:invar}
+ There is an optimal p.r.~binary interpreter.
+ \end{theorem}
+
+% Gacs source line 842
+\begin{proof}
+  \leanok
+  \uses{def:optimal} 
+The idea is to use interpreters that come from universal partial recursive
+functions.
+However,  not all such functions can be used for universal interpreters.
+Let us introduce an appropriate pairing function.
+For \( x \in \dB^{n} \), let 
+ \[
+   x^{o} = x(1) 0 x(2) 0 \ldots x(n-1) 0 x(n) 1 
+ \]
+  where \( x^o = x1 \) for \( \len{x} =1 \). Any binary sequence \( x \) can be
+uniquely represented in the form \( p = a^o b \). 
+
+We know there is a p.r.~function
+\( V : \dS_{2} \times \dS_{2} \times \dS \to \dS \) that
+is \emph{universal}: for any
+p.r.~binary interpreter \( A \), there is a string \( a \) such that for all
+\( p,x \), we have \( A(p,x) = V(a,p,x) \). 
+Let us define the function \( U(p,x) \) as follows. 
+We represent the string \( p \) in the form 
+\( p = u^o v \) and define \(  U(p,x) = V(u,v,x)  \). 
+Then \( U \) is a p.r.~interpreter.
+Let us verify that it is optimal. 
+Let \( A \) be a p.r.~binary
+interpreter, \( a \) a binary string such that \( A(p,x) = U(a,p,x) \) for
+all \( p,x \). 
+Let \( x,y \) be two strings. 
+If \( C_A(x \mvert y)=\infty \), then~\eqref{eq:opt} holds trivially. 
+Otherwise, let \( p \) be a binary string of
+length \( C_A(x \mvert y) \) with \( A(p,y)=x \). 
+Then we have
+ \[
+  U(a^o p, y) = V(a,p,y) = A(p,y) = x, 
+ \]
+  and
+ \[
+  C_U(x \mvert y) \le 2\len{a} + C_A(x \mvert y).
+ \]
+  \end{proof}
+
+% Gacs source line 901
+ \begin{definition}
+  \label{def:fixed-U}
+  \uses{thm:invar, def:complexity}
+We fix an optimal binary p.r.~interpreter \( U \) and write 
+\( C(x \mvert y) \) for \( C_U(x \mvert y) \). 
+ \end{definition}
+
+% Gacs source line 919
+ \begin{definition}
+  \label{def:tuples}
+  \uses{def:fixed-U}
+We define \( U_{p}(x_{1},\ldots,x_{k}) = U_{p}(\ang{ x_{1}\,\ldots, x_{k}}) \). 
+Similarly,
+we will refer to an arbitrary computably enumerable
+set as the range \( W_{p} \) of some \( U_{p} \).  
+We often do not need the second argument of the function \( U(p,x) \).  
+We therefore define 
+ \[ U(p) = U(p,\Lg).
+ \]
+ \end{definition}
+
+% Gacs source line 954
+ \begin{definition}
+  \label{def:additive-order}
+The relation 
+\( f \lea g \) means inequality to within an additive constant, that
+there is a constant \( c \) such that for all \( x \), \( f(x) \le g(x) \). 
+We can write this also as \( f \le g + O(1) \). 
+We also say that \( g \) \df{additively dominates} \( f \). 
+The relation \( f \eqa g \) means \( f \lea g \)
+and \( f \gea g \). 
+The relation \( f \lem g \) among nonnegative functions
+means inequality to within a multiplicative constant. 
+It is
+equivalent to \( \log f \lea \log g \) and \( f = O(g) \). 
+We also say that
+\( g \) \df{multiplicatively dominates} \( f \). 
+The relation \( f\eqm g \) means \( f \lem g \) and \( f \gem g \).
+ \end{definition}
+
+% Gacs source line 973
+\begin{theorem}
+  \lean{Kolmogorov.plainKNatLeLength, Kolmogorov.plainKLeLength, Kolmogorov.cardCompressibleWordsLt}
+  \leanok
+  \uses{def:fixed-U, def:additive-order} \label{thm:upbd}
+The following simple upper bound holds.
+ \begin{alphenum}  
+  \item \label{thebd} For any natural number \( m \), we have 
+ \begin{equation} C(m) \lea \log m. \label{eq:upbd}
+ \end{equation}
+ \item \label{howsharp}
+  For any positive real number \( v \) and string \( y \), every finite set 
+	\( E \) of size \( m \) has at least \( m(1-2^{-v+1}) \) elements \( x \) with 
+	\( C(x \mvert y) \ge \log m - v  \).
+ \end{alphenum}
+\end{theorem}
+
+% Gacs source line 986
+\begin{corollary}
+  \label{cor:limC}
+  \lean{Kolmogorov.plainKNat_eventually_gt, Kolmogorov.plainKNat_toNat_tendsto_atTop}
+  \leanok
+  \uses{thm:upbd}  \( \lim_{n\to\infty} C(n) = \infty \).
+\end{corollary}
+
+% Gacs source line 993
+\begin{proof}[Proof of Theorem \protect\ref{thm:upbd}]
+  \proves{thm:upbd}
+  \leanok
+  \uses{def:fixed-U}
+ First we prove~\eqref{thebd}.  Let the interpreter \( A \) be defined such
+that if \( \bg(m) = p \) then \( A(p,y) = m \). Since
+ \( |\bg(m)| = \cei{ \log m} \), we have \( C(m) \lea C_A(m) < \log m + 1 \).
+
+Part~\eqref{howsharp} says that the trivial estimate~\eqref{eq:upbd} is
+quite sharp for {\em most} numbers under \( m \). The reason for this is
+that since there are only few short programs, there are only few
+objects of low complexity. For any string \( y \), and any positive real
+natural number \( u \), we have 
+ \begin{equation} \card{\setof{ x : C(x \mvert y) \le u }} < 2^{u+1}. 
+\label{eq:howsharp} \end{equation} 
+  To see this, let \( n=\flo{ \log u } \). The number \( 2^{n+1}-1 \) of 
+different binary strings of length \( \le n \) is an upper 
+bound on the number of different shortest programs of length \( \le u \). 
+Now~\eqref{howsharp} follows immediately from~\eqref{eq:howsharp}.
+ \end{proof}
+
+%%%% ===================== SECTION 1.4 Simple properties of information =====================
+
+
+\section{Simple properties of information }
+The results of this section are all consequences of one move: given an interpreter, build
+another one that does a little extra work before or after it, then appeal to optimality.
+In Lean the same move appears as a pair of transport lemmas.
+
+
+% Gacs source line 1071
+\begin{theorem}
+  \lean{Kolmogorov.condK_le_condK_ctx_map}
+  \leanok
+  \uses{def:fixed-U, def:additive-order} \label{thm:rectransf}
+ For any partial recursive function \( U_{q} \), over 
+strings, we have
+ \begin{align*} C(U_{q}(x) \mvert y)	&\lea  C(x \mvert y) + J(\len{q}),
+  \\   C(y \mvert U_{q}(x))	&\gea  C(y \mvert x) - J(\len{q}).
+ \end{align*}
+\end{theorem}
+
+% Gacs source line 1079
+\begin{proof}
+  \leanok
+  \uses{def:optimal}
+ To define an interpreter \( A \) with \( C_A(U_{q}(x) \mvert y) \lea C(x \mvert y )
++ J(\len{q}) \), we define \( A(\ig(q)p,y) = U_{q}(U(p,y)) \). 
+To define an
+interpreter \( B \) with \( C_B(y \mvert x) \lea C(y \mvert U_{q}(x)) + J(q) \), we
+define \( B(\ig(q)p,x) = U(p,U_{q}(x)) \).
+ \end{proof}
+
+% Gacs source line 1089
+ \begin{definition}
+  \label{def:pair-complexity}
+  \uses{def:tuples, def:fixed-U}
+The definition of conditional complexity is extended to pairs, etc. by 
+ \[
+ C(x_{1},\ldots,x_{m} \mvert y_{1},\ldots, y_{n}) 
+	= C(\ang{ x_{1},\ldots,x_{m}}  \mvert \ang{ y_{1},\ldots,y_{n}} ).
+ \]
+ \end{definition}
+
+% Gacs source line 1099
+\begin{corollary}
+  \lean{Kolmogorov.condK_le_condK_pair_left, Kolmogorov.condK_le_condK_pair_right, Kolmogorov.plainK_pair_self_eq}
+  \leanok
+  \uses{thm:rectransf, def:pair-complexity} \label{c:upbdrec}
+ For any one-to-one p.r. function \( U_{p} \), we have 
+ \[ |C(x) - C(U_{p}(x))| \lea J(\len{p}).
+ \]
+  Further,
+ \begin{align} 	C(x \mvert y,z)	&\lea  C(x \mvert U_{p}(y),z)+J(\len{p}), \nn
+  \\	C(U_{p}(x)) 	&\lea  C(x) + J(\len{p}),\nn	
+  \\	C(x \mvert z)	&\lea  C(x,y \mvert z), \label{eq:x.xy} 		
+  \\	C(x \mvert y,z)	&\lea  C(x \mvert y),   \nn		
+  \\	C(x,x)		&\eqa  C(x),       \label{eq:xx.x}
+  \\	C(x,y \mvert z)	&\eqa  C(y,x \mvert z),	\nn	
+  \\	C(x \mvert y,z)	&\eqa  C(x \mvert z,y),	\nn	
+  \\	C(x,y \mvert x,z)	&\eqa  C(y \mvert x,z),	\nn	
+  \\	C(x \mvert x,z)	&\eqa  C(x \mvert x) \eqa 0.  \nn		
+ \end{align}
+ \end{corollary}
+
+% Gacs source line 1124
+ \begin{theorem}
+  \lean{Kolmogorov.plainK_pairCode_le}
+  \leanok
+  \uses{def:pair-complexity} \label{thm:addit}
+ \[  C(x,y) \lea J(C(x)) + C(y \mvert x).
+ \]
+ \end{theorem}
+
+% Gacs source line 1129
+\begin{proof}
+  \leanok
+  \uses{def:optimal, def:pair-complexity}
+ We define an interpreter \( A \) as follows. 
+We decompose any binary
+string \( p \) into the form \( p = \ig(w)q \), and let \( A(p,z) = U(q,U(w)) \).
+Then \( C_A(x,y) \) is bounded, to within an additive constant, by the 
+right-hand side of the above inequality.
+ \end{proof}
+
+% Gacs source line 1137
+\begin{corollary}
+  \lean{Kolmogorov.plainK_pairCode_le_plainK, Kolmogorov.plainK_map_pairCode_le}
+  \leanok
+  \uses{thm:addit, thm:rectransf} \label{cy:funcofpair}
+ For any p.r.~function \( U_{p} \) over pairs of strings, we have 
+ \begin{align*} 
+C(U_{p}(x,y)) &\lea  J(C(x)) + C(y \mvert x) + J(\len{p})
+  \\		  &\lea  J(C(x)) + C(y) + J(\len{p}),
+ \end{align*}
+  and in particular,
+ \[
+ 	C(x,y) \lea J(C(x)) + C(y).
+ \]
+ \end{corollary}
+
+% Gacs source line 1205
+\begin{theorem}
+  \lean{Kolmogorov.condK_le_log_card, Kolmogorov.condK_le_log_card_finset}
+  \leanok
+  \uses{def:pair-complexity} \label{thm:condupbd}
+ Let \( E=W_{p} \) be an enumerable set of pairs of strings defined
+enumerated with the help of the program \( p \) for example as 
+ \begin{equation} 
+ W_{p}= \setof{ U(p,x): x\in \dN}. \label{eq:Wp}
+ \end{equation}
+  We define the \df{section} 
+ \begin{equation} 
+ E^a = \setof{ x :  \tupcod{a,x}  \in E }. \label{eq:sectiondef}
+ \end{equation}
+  Then for all \( a \) and \( x \in E^a \), we have 
+ \[  
+  C(x \mvert a) \lea \log\card{E^a} + J(\len{p}).
+ \]
+ \end{theorem}
+
+% Gacs source line 1220
+\begin{proof}
+  \leanok
+  \uses{def:optimal}
+ We define an interpreter \( A(q,b) \) as follows. 
+We decompose \( q \) into \( q = \ig(p) \bg(t) \). 
+From a standard enumeration \( (a(k),x(k)) \)
+\( (k=1,2,\ldots) \) of the set \( W_{p} \), we produce an enumeration \( x(k,b) \)
+\( (k=1,2,\ldots) \), without repetition, of the set \( W_{p}^b \) for each
+\( b \), and define \( A(q,b)=x(t,b) \). 
+For this interpreter \( A \), we get
+\( k_A(x \mvert a) \lea J(\len{p}) + \log \card{E^a} \). 
+ \end{proof}
+
+% Gacs source line 1239
+\begin{theorem}
+  \lean{Kolmogorov.plainK_pair_selfComplexity_eq}
+  \leanok
+  \uses{def:pair-complexity, thm:upbd} \label{thm:xKx}
+We have \( C(x,C(x)) \eqa C(x) \).
+ \end{theorem}
+
+% Gacs source line 1242
+\begin{proof}
+  \leanok
+  \uses{def:optimal}
+ The inequality \( \gea \) follows from~\eqref{eq:x.xy}. 
+To prove \( \lea \), let \( A(p) =  \ang{ U(p,\len{p})}  \). 
+Then \( C_A(x,C(x)) \le C(x) \).
+ \end{proof}
+
+% Gacs source line 1250
+\begin{theorem}
+  \lean{Kolmogorov.condK_pair_sub_selfComplexity_le}
+  \leanok
+  \uses{def:pair-complexity} \label{thm:strange}
+ \[	
+C(y\mvert x,\ i-C(y\mvert x,i)) \lea C(y\mvert x,i).
+ \]
+ \end{theorem}
+
+%%%% ===================== SECTION 1.5 Algorithmic properties of complexity =====================
+
+
+\section{Algorithmic properties of complexity}
+Complexity is not computable, but it is upper semicomputable, and that one-sided
+computability is exactly what makes the theory work. Levin's theorem turns the
+observation into a characterization.
+
+
+% Gacs source line 1269
+\begin{definition}[Computability]
+  \label{def:computable-function}
+  \lean{Kolmogorov.IsComputableENNReal}
+  \leanok
+Let \( f:\dS\to\dR \) be a function.
+It is \df{computable} if there is a recursive function \( g(x,n) \) with rational
+values, and  \( |f(x)-g(x,n)| < 1/n \). 
+\end{definition}
+
+% Gacs source line 1275
+ \begin{definition}[Semicomputability]
+  \lean{Kolmogorov.IsLSC₁, Kolmogorov.UpperSemicomputable}
+  \leanok
+  \uses{def:computable-function}\label{def:semicomputability}
+A function \( f : \dS \to \rint{-\infty}{\infty} \) is \df{(lower) semicomputable}
+if the set 
+ \[
+	\setof{ \tup{x,r} : x \in \dS,\; r \in \dQ,\; r<f(x) }
+ \] 
+ is recursively enumerable. 
+A function \( f \) is called \df{upper semicomputable} if \( -f \) is
+lower semicomputable.
+ \end{definition}
+
+% Gacs source line 1305
+\begin{definition}[Computability for real functions]
+  \label{def:computable-real-function}
+  \notready
+Let \( f:\dR\to\dR \) be a function.
+It is \df{computable} if there is a recursively enumerable set 
+\( \cF\sbsq \bg^{2} \)
+such that denoting \( \cF_{J}=\setof{I: (I,J)\in \cF} \) we have
+ \begin{align*}
+   f^{-1}(J) = \bigcup_{I\in\cF_{J}}I.
+ \end{align*}
+\end{definition}
+
+\begin{formalization}
+This clause and the next concern functions of a real variable, in the sense of enumerable sets of rational intervals. The library has no computability theory for real-input functions, and nothing else in Chapter 1 depends on one, so these two definitions are stated here but not formalized.
+\end{formalization}
+
+% Gacs source line 1318
+\begin{definition}
+  \label{def:lsc-real-function}
+  \notready
+  We say that \( f:\dR\to\ol\dR \) is
+\df{lower semicomputable} if there is a recursively enumerable set 
+\( \cG\sbsq \cQ\times\bg \)
+such that denoting \( \cG_{q}=\setof{I: (I,q)\in \cG} \) we have
+ \begin{align*}
+   f^{-1}(\opint{q}{\infty}) = \bigcup_{I\in\cF_{J}}I.
+ \end{align*}
+\end{definition}
+
+% Gacs source line 1332
+\begin{proposition}
+  \lean{Kolmogorov.IsLSC₁.add, Kolmogorov.IsLSC₁.max, Kolmogorov.IsLSC₁.comp_computable, Kolmogorov.IsComputableENNReal.comp_computable}
+  \uses{def:computable-function, def:semicomputability}\label{propo:l-sc-properties}\ 
+  \begin{alphenum}
+  \item 
+  The function \( \cei{\cdot}:\dR\to\dR \) is lower semicomputable.
+  \item If \( f,g:\dR\to\dR \) are computable then their composition
+    \( f(g(\cdot)) \) is, too.
+  \item If \( f:\dR\to\dR \) is lower semicomputable and \( g:\dR\to\dR \) 
+(or \( \dS\to\dR \)) is computable then \( f(g(\cdot)) \) is lower semicomputable.
+  \item If \( f:\dR\to\dR \) is lower semicomputable and monotonic,
+and \( g:\dR\to\dR \) (or \( \dS\to\dR \)) is lower 
+semicomputable then \( f(g(\cdot)) \) is lower semicomputable.
+  \end{alphenum}
+\end{proposition}
+
+\begin{formalization}
+Clauses (b) and (c) are formalized for functions on strings, together with closure under sum and maximum. Clauses (a) and (d) speak about functions of a real variable and are not formalized, which is why this node is not marked green.
+\end{formalization}
+
+% Gacs source line 1346
+ \begin{definition}
+  \label{def:universal-lsc}
+  \uses{def:semicomputability}
+We introduce a \df{universal lower semicomputable function}. 
+For every binary string \( p \), and \( x \in \dS \), let
+ \[ 
+  S_{p}(x)= \sup\setof{ y/z : y,z\in Z, z \not = 0, 
+	\ang{\ang{ x } ,y,z }  \in W_{p} }
+ \]
+where \( W_{p} \) was defined in~\eqref{eq:Wp}.  
+ \end{definition}
+
+% Gacs source line 1360
+ \begin{definition}
+  \label{def:lsc-tuples}
+  \uses{def:universal-lsc}
+Let \( S_{p}(x_{1},\ldots,x_{k})= S_{p}(\ang{ x_{1},\ldots,x_{k} } ) \).  
+For any lower semicomputable function \( f \), we call any binary string \( p \) with
+\( S_{p}=f \) a \df{G\"odel number} of \( f \). 
+There is no universal computable function, but for any computable 
+function \( g \), we call any number \(  \tupcod{  \tupcod{ p } , \tupcod{ q } }  \) 
+a G\"odel number of \( g \) if \( g=S_{p}=-S_{q} \).
+ \end{definition}
+
+% Gacs source line 1371
+\begin{theorem}
+  \lean{Kolmogorov.condK_upperSemicomputable}
+  \leanok
+  \uses{def:semicomputability, thm:upbd}	      \label{thm:Ksemicp}
+ The function \( C(x \mvert y) \) is upper semicomputable.
+ \end{theorem}
+
+% Gacs source line 1374
+\begin{proof}
+  \leanok
+  \uses{thm:upbd} 
+ By Theorem~\ref{thm:upbd} there is a constant \( c \) such that for
+any strings \( x,y \), we have \( C(x \mvert y) < \log \tupcod{  x  }  + c \).  
+Let some Turing machine compute our optimal binary p.r.~interpreter. 
+Let \( U^{t}(p,y) \) be defined as \( U(p,y) \) if this machine, when started on
+input \( (p,y) \), gives an output in \( t \) steps, undefined otherwise. 
+Let \( K^{t}(x \mvert y) \) be the smaller of \( \log  \tupcod{  x  }  + c \) and 
+ \[  
+   \min\setof{ \len{p} \le t : U^{t}(p,y)=x }.
+ \]
+Then the function \( K^{t}(x \mvert y) \) is computable, monotonic in \( t \) and 
+\( \lim_{t\to\infty} K^{t}(x \mvert y) = C(x \mvert y) \). 
+ \end{proof}
+
+% Gacs source line 1391
+\begin{theorem}
+  \lean{Kolmogorov.noComputableUnboundedLowerBound, Kolmogorov.notComputablePlainKNat}
+  \leanok
+  \uses{def:fixed-U} \label{thm:nolb}
+ Let \( U_{p}(n) \) be a partial recursive function whose values are numbers
+smaller than \( C(n) \) whenever defined. Then 
+ \[  
+ U_{p}(n) \lea J(\len{p}).
+ \]
+ \end{theorem}
+
+% Gacs source line 1398
+\begin{proof}
+  \leanok
+  \uses{def:fixed-U}
+ The proof of this theorem resembles ``Berry's paradox '', which says:
+``The least number that cannot be defined in less than 100 words'' is a 
+definition of that number in 12 words. 
+The paradox can be used to 
+prove, whenever we agree on a formal notion of ``definition'', that the 
+sentence in quotes is not a definition. 
+
+Let \( x(p,k) \) for \( k=1,2,\ldots \) be an enumeration of the domain of 
+\( U_{p} \). For any natural number \( m \) in the range of \( U_{p} \), let \( f(p,m) \) be 
+equal to the first \( x(p,k) \) with \( U_{p}(x(p,k)) = m \). Then by definition, 
+\( m < C(f(p,m)) \). On the other hand, \( f(p,m) \) is a p.r.~function, hence 
+applying Corollary~\ref{cy:funcofpair} and~\eqref{eq:binupbd} we get 
+ \begin{align*}
+     m	&< C(f(p,m)) \lea C(p) + J(C(m))
+   \\	&\lea \len{p} + 1.5\log m. 		
+ \end{align*}
+ \end{proof}
+
+% Gacs source line 1427
+ \begin{definition}
+  \label{def:simple-set}
+A computably enumerable set is \df{simple} if its complement is infinite but
+does not contain any infinite computably enumerable subsets. 
+ \end{definition}
+
+% Gacs source line 1464
+\begin{corollary}
+  \label{cor:chaitin}
+  \lean{Kolmogorov.FormalSystem.chaitinBound, Kolmogorov.FormalSystem.chaitinIncompleteness}
+  \leanok
+  \uses{thm:nolb}
+There is a constant \( c<\infty \) such that for any \( p \), if any sentences
+with the meaning ``\( m < C(n) \)'' for \( m > J(\len{p}) + c \)  are 
+provable in theory \( T_{p} \) then some of these sentences are false. 
+ \end{corollary}
+
+\begin{formalization}
+The Lean version states the bound and the incompleteness consequence for an abstract sound formal system, in the style of Kritchman and Raz, rather than for a concrete axiomatization of arithmetic.
+\end{formalization}
+
+% Gacs source line 1469
+\begin{proof}
+  \proves{cor:chaitin}
+  \leanok
+  \uses{thm:nolb} For some \( p \), suppose that all sentences ``\( m<C(n) \)''
+provable in \( T_{p} \) are true. 
+For a sentence \( \Phi \), let \( T_{p} \vdash \Phi \) 
+denote that \( \Phi \) is a theorem of the theory \( T_{p} \). 
+Let us define the function 
+ \[
+ A(p,n) = \max\setof{ m : T_{p} \vdash \text{``}m < C(n)\text{''} }.
+ \]
+ This function is semicomputable since the set
+\( \setof{(p,\tupcod{\Phi}): T_{p}\vdash\Phi} \) is recursively
+enumerable.  
+Therefore there is a binary string \( a \) such that
+\( A(p,n)=S(a,\tupcod{ p,n}) \). 
+It is easy to see that we have a constant string \( b \) such that 
+ \[
+   S(a, \tupcod{ p,n } ) = S(q, n)
+ \]
+  where \( q = \ol b \ol a p \). 
+(Formally, this statement follows for example from the so-called \( S_{m}^{n} \)-theorem.)  
+The function \( S_{q}(n) \) is a
+lower bound on the complexity function \( C(n) \). 
+By an immediate
+generalization of Theorem~\ref{thm:nolb} for semicomputable functions),
+we have \( S(q,n) \lea J(\len{q}) \lea  J(\len{p}) \).
+ \end{proof}
+
+% Gacs source line 1503
+\begin{theorem}[Levin]
+  \lean{Kolmogorov.levin_characterization}
+  \leanok
+  \uses{def:semicomputability, thm:upbd}  \label{thm:Kmajor}
+Let \( F(x,y) \) be a function of strings semicomputable from above. 
+The relation \( C(x \mvert y) \lea F(x,y) \) holds for all \( x,y \) if and only if 
+we have 
+ \begin{equation} \label{eq:Kmajor}
+  \log |\setof{ x : F(x,y ) < m } | \lea m  
+ \end{equation}
+  for all strings \( y \) and natural numbers \( m \). 
+ \end{theorem}
+
+% Gacs source line 1512
+\begin{proof}
+  \leanok
+  \uses{thm:upbd}
+ Suppose that \( C(x \mvert y) \lea F(x,y) \) holds. 
+Then~\eqref{eq:Kmajor} follows from~\ref{howsharp} of Theorem~\ref{thm:upbd}.
+
+Now suppose that~\eqref{eq:Kmajor} holds for all \( y,m \). 
+Then let \( E \) be the computably enumerable set of triples \( (x,y,m) \) with \( F(x,y) < m \). 
+It follows from~\eqref{eq:Kmajor} and Theorem~\ref{thm:condupbd} that for all
+\( (x,y,m)\in E \) we have \( C(x \mvert y,m) \lea m \).  
+By Theorem~\ref{thm:strange} then \( C(x \mvert y) \lea m \). 
+ \end{proof}
+
+%%%% ===================== SECTION 1.6 The coding theorem =====================
+
+
+\section{The coding theorem}
+Restricting to self-delimiting interpreters gives prefix complexity $K$, and the coding
+theorem identifies it with the negative logarithm of the universal semimeasure. This is
+the technical heart of the chapter.
+
+
+% Gacs source line 1547
+ \begin{definition}
+  \label{def:prefix-free}
+A set of strings is called \df{prefix-free} if for any pair \( x,y \) of
+elements in it, \( x \) is not a prefix of \( y \).
+
+A one-to-one function into a set of strings is a
+\df{prefix code}, or \df{instantaneous code} if its domain of definition is
+prefix free. 
+
+An interpreter
+\( f(p,x) \) is \df{self-delimiting (s.d.)} if for each \( x \), the set
+\( D_{x} \) of strings \( p \) for which \( f(p,x) \) is defined is a prefix-free set.
+ \end{definition}
+
+% Gacs source line 1560
+ \begin{example}
+  \label{ex:selfdelim-code}
+  \uses{def:prefix-free}
+The mapping \( p \to p^o \) is a prefix code.
+ \end{example}
+
+% Gacs source line 1567
+\begin{definition}
+  \label{def:sd-machine}
+  \lean{Kolmogorov.IsPrefixMachine}
+  \leanok
+  \uses{def:prefix-free}
+A Turing machine \( \cT \) is \df{self-delimiting} if it
+has no input tape, but can ask any time for a new input symbol. 
+After some computation and a few such requests (if ever) the
+machine decides to write the output and stop. 
+\end{definition}
+
+% Gacs source line 1589
+\begin{definition}
+  \label{def:sd-optimal}
+  \lean{Kolmogorov.IsOptimalPrefixConditional}
+  \leanok
+  \uses{def:sd-machine}
+A self-delimiting partial recursive 
+interpreter \( T \) is called \df{optimal} if for any other s.d.~p.r.~interpreter \( F \), 
+we have 
+ \begin{equation} 	C_{T} \lea C_{F}. \label{eq:sdopt}  
+ \end{equation}
+\end{definition}
+
+% Gacs source line 1597
+\begin{theorem}
+  \lean{Kolmogorov.exists_isOptimalPrefixConditional}
+  \leanok
+  \uses{def:sd-optimal} \label{thm:sdopt} There is an optimal s.d.~interpreter.
+\end{theorem}
+
+% Gacs source line 1599
+\begin{proof}
+  \leanok
+  \uses{def:sd-optimal, thm:invar}								
+The proof of this theorem is similar to the proof of Theorem~\ref{thm:invar}.
+We take the universal partial recursive function \( V(a,p,x) \). 
+We transform each function 
+\( V_a(p,x)=V(a,p,x) \) into a self-delimiting function
+\( W_a(p,x)=W(a,p,x) \), but so as not to change the functions \( V_a \)
+which are already self-delimiting. 
+Then we form \( T \) from \( W \) just as we formed \( U \) from \( V \). 
+It is easy to check that the function \( T \)
+thus defined has the desired properties. 
+Therefore we are done if we construct \( W \).
+
+Let some Turing machine \( \cM \) compute \( y=V_a(p,x) \) in \( t \) steps.
+We define \( W_a(p,x)=y \) if \( \len{p} \le t \) and if \( \cM \) does not
+compute in \( t \) or fewer steps any output \( V_a(q,x) \) from any
+extension or prefix \( q \) of length \( \le t \) of \( p \). 
+If \( V_a \) is
+self-delimiting then \( W_a=V_a \). But \( W_a \) is always self-delimiting.
+Indeed, suppose that \( p_{0} \prefix p_{1} \) and that \( \cM \) computes
+\( V_a(p_{i},x) \) in \( t_{i} \) steps. 
+The value \( W_a(p_{i},x) \) can be defined only if \( \len{p_{i}} \le t_{i} \). 
+The definition of \( W_a \) guarantees that if
+\( t_{0} \le t_{1} \) then \( W_a(p_{1},x) \) is undefined, otherwise \( W_a(p_{0},x) \)
+is undefined. 
+ \end{proof}
+
+% Gacs source line 1625
+ \begin{definition}
+  \label{def:K}
+  \lean{Kolmogorov.KP, Kolmogorov.KPPlain}
+  \leanok
+  \uses{thm:sdopt}
+We fix an optimal self-delimiting p.r.~interpreter \( T(p,x) \) and write
+ \[ 	
+K(x \mvert y) = C_{T}(x \mvert y).
+ \]
+We call \( K(y \mvert x) \) the (self-delimiting) \df{conditional complexity} 
+of \( x \) with respect to \( y \). 
+ \end{definition}
+
+% Gacs source line 1653
+\begin{theorem}
+  \lean{Kolmogorov.plainK_le_KPPlain_le_plainK_add_log, Kolmogorov.KP_le_condK_add_log, Kolmogorov.KPPlain_le_plainK_add_log}
+  \leanok
+  \uses{def:K, def:complexity} \label{thm:HK} 
+ \begin{equation} K \lea H \lea J(K). 
+ \end{equation}
+ \end{theorem}
+
+% Gacs source line 1657
+\begin{proof}
+  \leanok
+  \uses{def:K} Obviously, \( K \lea H \). We define a self-delimiting
+p.r.~function \( F(p,x) \). 
+The machine computing \( F \) tries to decompose 
+\( p \) into the form \( p=u^o v \) such that \( u \) is the number \( \len{v} \) in binary
+notation. 
+If it succeeds, it outputs \( U(v,x) \). 
+We have 
+ \[ 
+K(y \mvert x) \lea C_{F}(y \mvert x) \lea C(y \mvert x) + 2\log C(y \mvert x).
+ \]
+ \end{proof}
+
+% Gacs source line 1707
+  \begin{definition}
+  \label{def:semimeasure}
+  \lean{Kolmogorov.IsSemimeasure, Kolmogorov.IsLowerSemicomputableSemimeasure}
+  \leanok
+  \uses{def:semicomputability}
+A function \( w : S \to \clint{0}{1} \) is called a \df{semimeasure}
+over the space \( S \) if 
+ \begin{equation} \label{eq:dscrsemi} 
+  \sum_{x} w(x) \le 1. 
+ \end{equation}
+ It is called a \df{measure} (a probability distribution) if
+equality holds here. 
+
+A semimeasure is called \df{constructive} if it
+is lower semicomputable. 
+A constructive semimeasure which
+multiplicatively dominates every other constructive semimeasure is
+called \df{universal}.
+  \end{definition}
+
+% Gacs source line 1723
+ \begin{remark}
+  \label{rem:semimeasure-later}
+Just as in an earlier remark, we warn that semimeasures will later be
+defined over the space \( \dN^{\dN} \). 
+They will be characterized by a
+nonnegative function \( w \) over \( \dS=\dN^{*} \) but with a condition different
+from~\eqref{eq:dscrsemi}.
+ \end{remark}
+
+% Gacs source line 1733
+ \begin{proposition}
+  \label{prop:constructive-measure}
+  \lean{Kolmogorov.isComputable_of_isLSC₁_of_tsum_eq_one, Kolmogorov.IsLowerSemicomputableSemimeasure.isComputable_of_tsum_eq_one}
+  \leanok
+  \uses{def:semimeasure}
+If a constructive semimeasure \( w \) is also a measure then it is
+computable. 
+ \end{proposition}
+
+% Gacs source line 1737
+ \begin{proof}
+  \proves{prop:constructive-measure}
+  \leanok
+  \uses{def:semimeasure}
+If we compute an approximation \( w_{t} \) of the
+function \( w \) from below for which \( 1-\eps < \sum_{x} w_{t}(x) \) then we
+have \( | w(x)-w_{t}(x) | < \eps \) for all \( x \). 
+ \end{proof}
+
+% Gacs source line 1743
+ \begin{theorem}
+  \lean{Kolmogorov.IsUniversalSemimeasure, Kolmogorov.exists_universalSemimeasure}
+  \leanok
+  \uses{def:semimeasure} \label{thm:univsem} 
+There is a universal constructive semimeasure.
+ \end{theorem}
+
+% Gacs source line 1746
+\begin{proof}
+  \leanok
+  \uses{def:semimeasure} 
+ Every computable family \( w_{i} \) \( (i=1,2,\dotsc) \) of semimeasures is
+dominated by the semimeasure \( \sum_{i} 2^{-i}w_{i} \). 
+Since there are only
+countably many constructive semimeasures there exists a semimeasure
+dominating them all. 
+The only point to prove is that the dominating
+semimeasure can be made constructive. 
+
+Below, we construct a function \( \mu_{p}(x) \) lower
+semicomputable in \( p,x \) such 
+that \( \mu_{p} \) as a function of \( x \) is a constructive semimeasure for
+all \( p \) and all constructive semimeasures occur among the \( w_{p} \). 
+Once we have \( \mu_{p} \) we are done because for any positive computable
+function \( \dg(p) \) with \( \sum_{p} \dg(p) \le 1 \) the semimeasure 
+\( \sum_{p} \dg(p) \mu_{p} \) is obviously lower
+semicomputable and dominates all the
+\( \mu_{p} \). 
+
+Let \( S_{p}(x) \) be the lower semicomputable function with G\"odel number \( p \)
+and let \( S_{p}^{t}(x) \) be a function recursive in \( p,t,x \) with rational
+values, dondecreasing in \( t \), such that 
+\( \lim_{t} S^{t}_{p}(x) = \max\{0,S_{p}(x)\} \) and for each \( t,p \), the function 
+\( S_{p}^{t}(x) \) is
+different from 0 only for \( x \le t \). Let us define \( \mu_{p}^{t} \)
+recursively in \( t \) as follows. 
+Let \( \mu_{p}^0(x) = 0 \). 
+Suppose that \( \mu_{p}^{t} \) is already defined. 
+If \( S_{p}^{t+1} \) is a semimeasure then we
+define \( \mu_{p}^{t+1}=S_{p}^{t+1} \), otherwise \( \mu_{p}^{t+1} = \mu_{p}^{t} \).
+Let \( \mu_{p} = \lim_{t} \mu_{p}^{t} \). 
+The function \( \mu_{p}(x) \) is, by its
+definition, lower semicomputable in \( p,x \) and a semimeasure for each fixed
+\( p \). 
+It is equal to \( S_{p} \) whenever \( S_{p} \) is a semimeasure, hence it
+enumerates all constructive semimeasures.
+ \end{proof}
+
+% Gacs source line 1786
+\begin{definition}
+  \lean{Kolmogorov.IsUniversalSemimeasure}
+  \leanok
+  \uses{thm:univsem}\label{def:m}
+We choose a fixed universal constructive semimeasure and call it \( \m(x) \).
+\end{definition}
+
+% Gacs source line 1793
+ \begin{definition}
+  \label{def:m-of-nu}
+  \notready
+For an arbitrary constructive semimeasure \( \nu \) let us define
+ \begin{equation}\label{eq:m(nu)}
+   \m(\nu) = 
+\sum\setof{\m(p) : \txt{the (self-delimiting) program \( p \) computes \( \nu \)}}.
+ \end{equation}
+Similar notation will be used for other objects: for example
+now \( \m(f) \) make sense for a recursive function \( f \).
+ \end{definition}
+
+% Gacs source line 1805
+ \begin{theorem}
+  \uses{def:m-of-nu, def:m}
+  \notready\label{thm:exact-domin} 
+For all constructive semimeasures \( \nu \) and for all strings \( x \), we have 
+ \begin{equation}\label{eq:exact-domin}
+  \m(\nu) \nu(x) \lem \m(x).
+ \end{equation}
+ \end{theorem}
+
+\begin{formalization}
+Not formalized. The library proves domination of every lower semicomputable semimeasure by the universal one, but not this sharpened form with the weight of the semimeasure itself as the constant.
+\end{formalization}
+
+% Gacs source line 1811
+ \begin{proof}
+  \uses{thm:univsem}
+  \notready
+Let us repeat the proof of Theorem~\ref{thm:univsem}, using \( \m(p) \) in place
+of \( \dg(p) \).
+We obtain a new constructive semimeasure \( \m'(x) \) with the property
+\( \m(\nu)\nu(x) \le \m'(x) \) for all \( x \).
+Noting \( \m'(x) \eqm \m(x) \) finishes the proof.
+ \end{proof}
+
+% Gacs source line 1826
+ \begin{definition}
+  \label{def:code}
+  \uses{def:prefix-free}
+A (binary) \df{code} is any
+mapping from a set \( E \) of binary sequences to a set of objects. 
+This mapping is the \df{decoding function} of the code. 
+If the mapping is
+one-to-one, then sometimes the set \( E \) itself is also called a code.
+
+A code is a \df{prefix code} if \( E \) is a prefix-free set.
+ \end{definition}
+
+% Gacs source line 1838
+\begin{definition}
+  \label{def:first-shortest}
+  \uses{def:K}
+We call string \( p \) the first
+shortest description of \( x \) if it is the lexicographically first
+binary word \( q \) with \( |q| = C(x) \) and \( U(q)=x \). 
+\end{definition}
+
+% Gacs source line 1853
+ \begin{lemma}[Kraft's Inequality, see~\protect\cite{CsiszarKornerBook81}]
+  \lean{Kolmogorov.exists_prefixFree_code_of_kraft_le_one, Kolmogorov.finset_kraft_progWeight_le_one}
+  \leanok
+  \uses{def:prefix-free, def:code}
+\label{l:kraft} 
+For any sequence \( l_{1},l_{2},\ldots \) of
+natural numbers, there is a prefix code with exactly these numbers as
+codeword lengths, if and only if
+ \begin{equation}	\sum_{i} 2^{-l_{i}} \le 1. \label{eq:kraft} 
+ \end{equation}
+ \end{lemma}
+
+% Gacs source line 1861
+\begin{proof}
+  \leanok
+  \uses{def:code} 
+Recall the standard correspondence \( x \leftrightarrow [x] \) between
+binary strings and binary subintervals of the interval \( \clint{0}{1} \).  
+A prefix code corresponds to a set of disjoint intervals, and the 
+length of the interval \( [x] \) is \( 2^{-\len{x}} \). 
+This proves 
+that~\eqref{eq:kraft} holds for the lengths of codewords of a prefix code.
+
+Suppose that \( l_{i} \) is given and~\eqref{eq:kraft} holds. 
+We can assume that the sequence \( l_{i} \) is nondecreasing. 
+Chop disjoint, adjacent 
+intervals \( I_{1},I_{2},\ldots \) of length \( 2^{-l_{1}},2^{-l_{2}},\ldots \) from
+the left end of the interval \( [0,1] \). 
+The right end of \( I_{k} \) is \( \sum_{j=1}^k 2^{-l_{j}} \). 
+Since 
+the sequence \( l_{j} \) is nondecreasing, 
+all intervals \( I_{j} \) are binary intervals. 
+Take the binary string  corresponding to \( I_{j} \) as the \( j \)-th codeword. 
+ \end{proof}
+
+% Gacs source line 1881
+ \begin{corollary}
+  \label{cor:m-le-K}
+  \lean{Kolmogorov.complexityWeight_KP_le_aprioriMeasure, Kolmogorov.complexityWeight}
+  \leanok
+  \uses{l:kraft, def:K, def:m}
+We have \( -\log \m(x) \lea K(x) \).
+ \end{corollary}
+
+% Gacs source line 1884
+ \begin{proof}
+  \proves{cor:m-le-K}
+  \leanok
+  \uses{l:kraft}
+The lemma implies 
+ \begin{equation} \sum_y 2^{-K(y \mvert x)} \le 1.  \label{eq:condHsum} 
+ \end{equation}
+  Since \( K(x) \) is an upper semicomputable function, the function
+\( 2^{-K(x)} \) is lower semicomputable. 
+Hence it is a constructive semimeasure, and we have \( -\log \m(x) \lea K(x) \).
+ \end{proof}
+
+% Gacs source line 1901
+\begin{lemma}[Shannon-Fano code]
+  \label{l:shannon-fano}
+  \lean{Kolmogorov.exists_shannonFano_code}
+  \leanok
+  \uses{def:code, def:prefix-free} (see~\cite{CsiszarKornerBook81})
+ Let \( w_{1},w_{2},\ldots \) be positive numbers with \( \sum_{j} w_{j} \le 1 \).
+There is a binary prefix code \( p_{1},p_{2},\ldots \) where the codewords
+are in lexicographical order, such that 
+ \begin{equation} 	|p_{j}| \le -\log w_{j} + 2. \label{eq:shfano} 
+ \end{equation}
+ \end{lemma}
+
+\begin{formalization}
+The Lean version is finite and multiplicative: for finitely many weights it produces codeword lengths with $2^{-\len{p_j}} \le w_j < 2 \cdot 2^{-\len{p_j}}$. That is one bit sharper than the additive constant here, because we drop the requirement that the codewords follow the lexicographic order of the weights.
+\end{formalization}
+
+% Gacs source line 1908
+ \begin{proof}
+  \leanok
+  \uses{def:code} We follow the construction above and cut off disjoint,
+adjacent (not necessarily binary) intervals \( I_{j} \) of length \( w_{j} \) from 
+the left end of \( [0,1] \). Let \( v_{j} \) be the length of the longest binary 
+intervals contained in \( I_{j} \). 
+Let \( p_{j} \) be the binary word corresponding to the first one of these. 
+Four or fewer intervals of length \( v_{j} \) cover \( I_{j} \). 
+Therefore~\eqref{eq:shfano} holds. 
+\end{proof}
+
+% Gacs source line 1924
+\begin{theorem}[Coding Theorem, see~\protect\cite{Levin74,GacsSymm74,Chaitin75}]
+  \lean{Kolmogorov.universalSemimeasure_equiv_prefixComplexity}
+  \leanok
+  \uses{def:m, def:K, l:kraft, l:shannon-fano}
+\label{thm:coding} 
+  \begin{equation}  	K(x) \eqa -\log\m(x) \label{eq:codingth} 
+  \end{equation}
+ \end{theorem}
+
+% Gacs source line 1930
+\begin{proof}
+  \leanok
+  \uses{l:shannon-fano, def:m} 
+ We construct a self-delimiting p.r.~function \( F(p) \) with the
+property that \( C_{F}(x) \le -\log\m(x) + 4 \). The function \( F \) to be 
+constructed is the decoding function of a prefix code hence the 
+code-construction of Lemma~\ref{l:kraft} proposes itself. 
+But since
+the function \( \m(x) \) is only lower semicomputable, it is given only by a
+sequence converging to it from below. 
+
+Let \( \setof{ \pair{z_{t}}{k_{t}} : t=1,2,\ldots } \) be a recursive enumeration
+of the set \( \setof{ \pair{x}{k} : k < \m(x) } \) without repetition. Then 
+ \[ 
+  \sum_{t} 2^{-k_{t}} = \sum_{x} \sum_{z_{t}=1} 2^{-k_{t}} \le \sum_{x} 2\m(x) < 2.
+ \]
+  Let us cut off consecutive adjacent, disjoint intervals \( I_{t} \) of
+length \( 2^{-k_{t}-1} \) from the left side of the interval \( \clint{0}{1} \). 
+We define \( F \) as follows. If \( [p] \) is a largest binary subinterval of
+some \( I_{t} \) then \( F(p)=z_{t} \). Otherwise \( F(p) \) is undefined. 
+
+The function \( F \) is obviously self-delimiting and partial recursive. It 
+follows from the construction that for every \( x \) there is a \( t \) with 
+\( z_{t}=x \) and \( 0.5\m(x) < 2^{-k_{t}} \). Therefore, for every \( x \) 
+there is a \( p \) such that \( F(p)=x \) and \( |p| \le -\log\m(x) + 4 \). 
+ \end{proof}
+
+% Gacs source line 1987
+\begin{definition}
+  \label{def:PT}
+  \lean{Kolmogorov.aprioriMeasure}
+  \leanok
+  \uses{def:sd-machine}
+Let \( P_{T}(x) \) be the probability that the self-delimiting
+machine \( \cT \) gives out result \( x \) after receiving random bits as inputs.
+\end{definition}
+
+% Gacs source line 2012
+ \begin{definition}
+  \label{def:m-is-PT}
+  \lean{Kolmogorov.aprioriMeasure}
+  \leanok
+  \uses{def:PT, def:m}From now on let us define
+ \begin{equation}\label{eq:m(x)}
+   \m(x) = P_{T}(x).
+ \end{equation}
+ \end{definition}
+
+%%%% ===================== SECTION 1.7 The statistics of description length =====================
+
+
+\section{The statistics of description length }
+How many descriptions does an object have? The coding theorem answers several questions
+of this kind at once. This section is where the formalization does the most independent
+work, and where our statements depart most often from the printed ones.
+
+
+% Gacs source line 2026
+\begin{theorem}
+  \lean{Kolmogorov.progCount, Kolmogorov.progCount_le_aprioriMeasure_pair, Kolmogorov.inv_two_pow_mul_progCount_le_complexityWeight_pair, Kolmogorov.aprioriMeasure_pair_le_progCount}
+  \leanok
+  \uses{thm:sdopt, def:m, def:pair-complexity} \label{thm:Hstat} 
+  Let $f(x,n)$ be the number of binary strings $p$ of length $n$ with
+$T(p)=x$ for the universal s.d.~interpreter $T$ defined in 
+Theorem~\ref{thm:sdopt}.
+  Then for every $n \ge K(x)$, we have
+  \begin{equation}
+	\log f(x,n) \eqa n - K(x,n). \label{eq:Hstat} 
+  \end{equation}
+ \end{theorem}
+
+\begin{formalization}
+Formalized in the multiplicative form $2^{-n} f(x,n) \eqm \m(x,n)$ that the proof below actually establishes, in $[0,\infty]$ rather than through logarithms. The two halves are separate results, and the lower half carries the hypothesis $n \ge K(x,n) + c$, which is what the padding argument consumes. That hypothesis is stronger than the printed $n \ge K(x)$ by up to a logarithmic term; in the gap between them the printed claim needs $x$ to have a program of length exactly $n$, which holds at $n = K(x)$ but is not proved in the interior.
+\end{formalization}
+
+% Gacs source line 2040
+  \begin{corollary}
+  \label{cor:shortest-descriptions}
+  \lean{Kolmogorov.progCount_shortest_le}
+  \leanok
+  \uses{thm:Hstat} The number of shortest descriptions of any object is
+bounded by a universal constant.
+ \end{corollary}
+
+% Gacs source line 2052
+\begin{proof}[Proof of Theorem \protect\ref{thm:Hstat}]
+  \proves{thm:Hstat}
+  \leanok
+  \uses{thm:coding, def:m}
+ It is more convenient to prove equation~\eqref{eq:Hstat}
+in the form 
+ \begin{equation} \label{eq:Hstatmult} 
+ 	2^{-n}f(x,n) \eqm \m(x,n)
+ \end{equation}
+ where $\m(x,y) = \m(\ang{ x,y} )$.
+First we prove $\lem$.
+Let us define a p.r.~self-delimiting function $F$ by
+ $F(p) = \tupcod{T(p), \len{p}}$.
+Applying $F$ to a coin-tossing argument, $2^{-n}f(x,n)$ is the
+probability that the pair $\ang{x, n} $ is obtained.
+Therefore the left-hand side of~\eqref{eq:Hstatmult}, as a function of
+$\ang{ x,n}$, is a constructive semimeasure, dominated by $\m(x,n)$.
+
+  Now we prove $\gem$.
+  We define a self-delimiting p.r.~function $G$ as follows.
+  The machine computing $G(p)$ tries to decompose $p$ into
+three segments $p=\bg(c)^o v w$ in such a way that $T(v)$ is a pair 
+$\ang{ x, \len{p} + c }$.
+  If it succeeds then it outputs $x$.
+  By the universality of $T$, there is a binary string $g$ such that
+$T(gp)=G(p)$ for all $p$.
+  Let $r=\len{g}$.
+ For an arbitrary pair $x,n$, let $q$ be a shortest binary string with
+$T(q) = \tupcod{ x,n}$, and $w$ an arbitrary string of length
+ \[
+ 	l = n - \len{q} - r - \len{\bg(r)^o}.
+ \]
+  Then $G(\bg(r)^o q w) = T(g \bg(r)^o q w) = x$.
+  Since $w$ is arbitrary here, there are $2^l$ binary strings $p$ of length
+$n$ with $T(p) = x$.
+ \end{proof}
+
+% Gacs source line 2089
+ \begin{definition}
+  \label{def:Dn}
+  \uses{def:K}
+  Let $g_{T}(n)$ be the number of objects $x \in \dS$ with $K(x)=n$, and $D_{n}$
+the set of binary strings $p$ of length $n$ for which $T(p)$ is
+defined.
+  Let us define the moving average
+ \[
+	h_{T}(n,c) = \frac{1}{2c+1}\sum_{i = -c}^c g_{T}(n+i).
+ \]
+ \end{definition}
+
+% Gacs source line 2101
+\begin{theorem}
+  \lean{Kolmogorov.haltCount_le_complexityWeight, Kolmogorov.complexityWeight_le_haltCount, Kolmogorov.windowCount_eq_complexityWeight}
+  \leanok
+  \uses{def:Dn, thm:Hstat} \label{thm:exactstat} (\cite{SolovayManu}) 
+ There is a natural number $c$ such that 
+ \begin{align}
+	\log\card{D_{n}}	&\eqa n-K(n),	\label{eq:Dn}
+  \\	\log h_{T}(n,c)	&\eqa n-K(n).	\label{eq:aver}
+ \end{align}
+ \end{theorem}
+
+\begin{formalization}
+Both halves are formalized multiplicatively. The bound on $\card{D_n}$ from below carries the guard $K(n) + c \le n$, and the moving-average half is stated as an equality of window counts with the complexity weight.
+\end{formalization}
+
+% Gacs source line 2124
+\begin{lemma}
+  \lean{Kolmogorov.pairMarginal_eq_aprioriMeasure}
+  \leanok
+  \uses{def:m} \label{l:projmeas} 
+ \[
+ 	\sum_y \m(x,y) \eqm \m(x).
+ \]
+ \end{lemma}
+
+% Gacs source line 2130
+\begin{proof}
+  \leanok
+  \uses{def:m, thm:univsem}
+  The left-hand side is a constructive semimeasure therefore it is
+dominated by the right side.
+  To show $\gem$, note that by equation~\eqref{eq:xx.x} as applied to $H$, we
+have $K(x,x) \eqa K(x)$.
+  Therefore $\m(x) \eqm \m(x,x) < \sum_y \m(x,y)$.
+ \end{proof}
+
+% Gacs source line 2138
+\begin{proof}[Proof of Theorem \protect\ref{thm:exactstat}:]
+  \proves{thm:exactstat}
+  \leanok
+  \uses{l:projmeas, thm:Hstat}
+ Let $d_{n} = \card{D_{n}}$. Using Lemma~\ref{l:projmeas} and 
+Theorem~\ref{thm:Hstat} we have 
+ \[
+	g_{T}(n) \le d_{n} = \sum_{x} f(x,n) \eqm 2^{n} \sum_{x} \m(x,n) 
+			\eqm 2^{n} \m(n).
+ \]
+  Since the complexity $H$ has the same continuity 
+property~\eqref{eq:continui} as $K$, we can derive from here
+ $h_{T}(n,c) \le 2^{n}\m(n)O(2^c c^2)$.
+  To prove $h_{T}(n,c) \gem d_{n}$ for an appropriate $c$, we will prove that
+the complexity of at least half of the elements of $D_{n}$ is near $n$.
+
+  For some constant $c_{0}$, we have $K(p) \le n + c_{0}$ for all $p \in
+D_{n}$. 
+  Indeed, if the s.d.~p.r.~interpreter $F(p)$ is equal to $p$
+where $T(p)$ is defined and is undefined otherwise then $C_{F}(p) \le
+n$ for $p \in D_{n}$.
+  By $K(p,\len{p})\eqa K(p)$, and a variant of Lemma~\ref{l:projmeas}, we have
+ \[
+ \sum_{p \in D_{n}}\m(p) \eqm \sum_{p \in D_{n}} \m(p,n) \eqm \m(n).
+ \]
+  Using the expression~\eqref{eq:Dn} for $d_{n}$, we see that there is a
+constant $c_{1}$ such that 
+ \[
+  d_{n}^{-1} \sum_{p \in D_{n}} 2^{-K(p)} \le 2^{-n+c_{1}}.
+ \]
+  Using Markov's Inequality, hence the number of elements $p$ of $D_{n}$
+with $K(p) \ge n-c_{1}-1$ is at least $d_{n}/2$.
+  We finish the proof making $c$ to be the maximium of $c_{0}$ and $c_{1}+1$.
+ \end{proof}
+
+% Gacs source line 2189
+ \begin{definition}
+  \label{def:Kplus}
+  \lean{Kolmogorov.KPlus}
+  \leanok
+  \uses{def:K}
+Let us introduce the following function of natural numbers:
+ \[	
+  K^{+}(n) = \max_{k \le n} K(k).
+ \]
+ \end{definition}
+
+% Gacs source line 2202
+\begin{theorem}
+  \lean{Kolmogorov.KPlus_eq_size_add}
+  \leanok
+  \uses{def:Kplus} \label{thm:monbd} 
+We have $K^+(n) \eqa \log n + K(\flo{ \log n })$.
+  \end{theorem}
+
+% Gacs source line 2205
+\begin{proof}
+  \proves{thm:monbd}
+  \leanok
+  \uses{def:Kplus, def:sd-machine} 
+ To prove $\lea$, we construct a s.d.~interpreter as follows.
+  The machine computing $F(p)$ finds a decomposition $uv$ of $p$ such that
+$T(u)=\len{v}$, then outputs the number whose binary representation (with
+possible leading zeros) is the binary string $v$.
+  With this $F$, we have
+ \begin{equation} \label{eq:monbd1}   
+   K(k) \lea C_{F}(k) \le \log n + H (\flo{ \log n }) 
+ \end{equation}
+  for all $k \le n$.
+ The numbers between $n/2$ and $n$ are the ones whose binary representation
+has length $\flo{ \log n} + 1$.
+  Therefore if the bound~\eqref{eq:monbd} is sharp for most $x$ then the 
+bound~\eqref{eq:monbd1} is sharp for most $k$.
+ \end{proof}
+
+% Gacs source line 2231
+\begin{theorem}[see~\protect\cite{SolovayManu}]
+  \lean{Kolmogorov.exists_computable_upper_bound_eq_infinitely_often}
+  \leanok
+  \uses{def:K, thm:monbd} \label{thm:infsharp} 
+  There is a computable upper bound $G(n)$ of the function $K(n)$ with the
+property that $G(n)=K(n)$ holds for infinitely many $n$.
+ \end{theorem}
+
+% Gacs source line 2241
+ \begin{definition}
+  \label{def:K-with-time}
+  \uses{def:K}
+We know that for some constant $c$, the
+function $K(n)$ is bounded by $2\log n + c$.
+Let us fix such a $c$.
+
+For any number $n$ and s.d.~ Turing machine $\cM$, let $K_{\cM}(n;t)$ be
+the minimum of $2\log n + c$ and the lengths of descriptions from which
+$\cM$ computes $n$ in $t$ or fewer steps.
+ \end{definition}
+
+% Gacs source line 2255
+ \begin{definition}
+  \label{def:universal-machine-V}
+  \uses{def:K-with-time}
+Let us agree now that the universal p.r.~function
+is computed by a universal Turing
+machine $\cV$ with the property that for any Turing machine $\cM$ there is
+a constant $m$ such that the number of steps needed to simulate $t$ steps
+of $\cM$ takes no more than $mt$ steps on $\cV$.
+Let $\cT$ be the Turing machine constructed from $\cV$ computing the
+optimal s.d.~interpreter $T$, and let us write 
+ \begin{align*}
+  K(n,t)=K_{\cT}(n,t).
+ \end{align*}
+ \end{definition}
+
+% Gacs source line 2275
+\begin{proof}[Proof of Theorem \protect\ref{thm:infsharp}]
+  \proves{thm:infsharp}
+  \leanok
+  \uses{def:K-with-time, def:universal-machine-V}
+ First we prove that there are constants $c_{0},c_{1}$ such that $K(n;t) <
+K(n;t-1)$ implies 
+ \begin{equation} \label{eq:timetoo} 
+ 	K(\ang{ n,t} ; c_{0} t) \le K(n;t) + c_{1}.
+ \end{equation}
+  Indeed, we can construct a Turing machine $\cM$ simulating the 
+work of $\cT$ such that if $\cT$ outputs a number $n$ in $t$
+steps then $\cM$ outputs the pair $\ang{n,t}$ in $2t$ steps:
+ \[
+	K_{\cM}(\tupcod{ n,t} ; 2t) \le K(n,t).
+ \]
+  Combining this with the inequality~\eqref{eq:fastopt} gives the
+inequality~\eqref{eq:timetoo}.
+  We define now a recursive function $F$ as follows.
+  To compute $F(x)$, the s.d.~Turing machine first tries
+to find $n,t$ such that $x = \ang{ n,t}$.
+ (It stops even if it did not find them.)
+  Then it outputs $K(x; c_{0} t)$.
+  Since $F(x)$ is the length of some description of $x$, it is an upper
+bound for $K(x)$.
+  On the other hand, suppose that $x$ is one of the infinitely many
+integers of the form $\ang{ n,t } $ with
+ \[
+	K(n) = K(n;t) < K(n; t-1). 
+ \]
+  Then the inequality~\eqref{eq:timetoo} implies $F(x) \le K(n) + c_{1}$ while
+$K(n) \lea K(x)$ is known (it is the equivalent of~\ref{thm:xKx} for $H$), so
+$F(x) \le K(n) + c$ for some constant $c$. Now if $F$ would not be equal to
+$H$ at infinitely many places, only close to it (closer than $c$) then we
+can decrease it by some additive constant less than $c$ and modify it at
+finitely many places to obtain the desired function $G$.
+ \end{proof}
+
+
+\bibliographystyle{alpha}
+\bibliography{blueprint}

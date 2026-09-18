@@ -25,7 +25,7 @@ approximations are rationals with other denominators. This file supplies
   Theorem 2.2.1 needs to make `2^{-K(x)} / P(x)` a test.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 open scoped ENNReal
 
@@ -346,4 +346,4 @@ theorem IsComputableENNReal.inv_isLSC₁ {f : BitString → ℝ≥0∞} (hf : Is
           (natPow_primrec.to_comp.comp (Computable.const 2) Computable.fst))
         (Computable.snd.comp hhi))
 
-end Kolmogorov
+end Kolmogorov.Randomness

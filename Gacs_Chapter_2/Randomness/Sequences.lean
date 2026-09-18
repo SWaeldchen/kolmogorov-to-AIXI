@@ -25,7 +25,7 @@ Lemma 2.3.6), we take it from Mathlib: `ℕ → Bool` is compact by Tychonoff, a
 are closed and open.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 /-- Infinite binary sequences. -/
 abbrev Seq := ℕ → Bool
@@ -132,4 +132,4 @@ theorem exists_level_of_cylinder_subset {z : BitString} {Γ : Set BitString}
   rw [hw]
   exact (Finset.le_sup (f := fun x : Γ ↦ (x : BitString).length) hxt).trans (le_max_right _ _)
 
-end Kolmogorov
+end Kolmogorov.Randomness

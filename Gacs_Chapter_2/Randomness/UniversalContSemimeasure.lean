@@ -21,7 +21,7 @@ and `M ≥ 2^{-(i+1)} ν`. Lower semicomputability of the mixture is the reposit
 `trimSt (enumApprox i)`.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 open scoped ENNReal
 
@@ -99,4 +99,4 @@ theorem univContSemimeasure_isUniversal : IsUniversalContSemimeasure univContSem
 theorem exists_universalContSemimeasure : ∃ M, IsUniversalContSemimeasure M :=
   ⟨_, univContSemimeasure_isUniversal⟩
 
-end Kolmogorov
+end Kolmogorov.Randomness

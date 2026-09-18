@@ -23,3 +23,23 @@ div.corollary_thmcontent {
 div.proof_content {
 	border-left: .08rem solid grey;
 }
+
+/* Gacs writes the parts of a multi-part statement as (a), (b), ... .  The print
+ * version gets that from the enumerate package; plasTeX drops the label option,
+ * so the web version needs it here.  Our only ordered lists are alphenum, so
+ * this rule can be unconditional. */
+
+ol.enumerate {
+	list-style: none;
+	counter-reset: alphenum;
+	padding-left: 2em;
+}
+
+ol.enumerate > li {
+	counter-increment: alphenum;
+}
+
+ol.enumerate > li::before {
+	content: "(" counter(alphenum, lower-alpha) ")\00a0";
+	margin-left: -2em;
+}

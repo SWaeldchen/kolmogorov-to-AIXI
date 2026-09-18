@@ -287,3 +287,22 @@ Thm 2.3.7.
 
 Out of scope (Mathlib territory): Defs 2.3.15–2.3.28 and Props 2.3.19, 2.3.21,
 2.3.24, 2.3.26, 2.3.28.
+
+### 2026-09-18 — namespace change
+
+All files under `Gacs_Chapter_2/Randomness/` moved from `namespace Kolmogorov` to
+`namespace Kolmogorov.Randomness`. Thirteen declarations here carried the same
+fully-qualified name as declarations in `KolmogorovMathlib`, which no file had noticed
+because nothing imported both library roots; `lake exe checkdecls`, which imports every
+module of every library, fails outright on the first such clash. The collisions were
+`IsLSC₁`, `IsLSC.toUnary`, `IsComputableENNReal`, `IsLSC₁.comp_computable`, `goodStage`
+and its three companions, `exists_goodStage`, `natLe_primrec`, `natPow_primrec`,
+`sum_range_getD_eq`, `cylinder` and `mem_cylinder`. Note that several of these were *not*
+the same statement: our `IsComputableENNReal` is the two-sided lo/hi version and Chapter
+1's is one-sided, so merging them would have been wrong.
+
+One exception: `IsRE.congr`, `IsRE.comp` and `IsRE.inter_decidable` extend a type from
+Chapter 1, so they are declared `_root_.Kolmogorov.IsRE.*` and dot notation on an `IsRE`
+value keeps working. Anything about our own types needs no such treatment.
+
+Nothing else changed; `lake build Gacs_Chapter_2` is green.

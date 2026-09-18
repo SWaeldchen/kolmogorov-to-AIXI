@@ -22,7 +22,7 @@ The converse half of Proposition 2.2.3 (a probability-bounded test yields an int
 one after the correction `d − 2 log d − c`) is in `MLToIntegrable.lean`.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 open scoped ENNReal
 
@@ -98,4 +98,4 @@ theorem IsIntegrableTest.isMLTest {P : ComputableMeasure} {t : BitString → ℝ
     _ ≤ 1 * 2⁻¹ ^ k := mul_le_mul' h.2 le_rfl
     _ = 2⁻¹ ^ k := one_mul _
 
-end Kolmogorov
+end Kolmogorov.Randomness

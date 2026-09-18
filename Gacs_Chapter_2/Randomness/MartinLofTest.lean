@@ -45,7 +45,7 @@ and minimality gives `2^F · t x ≤ 2^{|x|+1}`, which is the one-bit slack in t
 constant.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 open scoped ENNReal
 
@@ -369,4 +369,4 @@ theorem mlDeficiency_isUniversalMLTestUniform (U : Map) (hU : isOptimalCondition
     IsUniversalMLTestUniform (mlDeficiency U) :=
   ⟨mlDeficiency_isMLTestUniform U hU, fun _ ht ↦ mlTest_le_mlDeficiency U hU ht⟩
 
-end Kolmogorov
+end Kolmogorov.Randomness

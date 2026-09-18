@@ -33,7 +33,7 @@ differ by a constant factor (coding theorem), and `universalSemimeasure_div_isUn
 gives that form too.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 open scoped ENNReal
 
@@ -157,4 +157,4 @@ theorem universalSemimeasure_div_isUniversal {m : BitString → ℝ≥0∞}
       _ ≤ 2 ^ c * (2 ^ c' * m x / P.mass x) := by gcongr
       _ = 2 ^ (c + c') * (m x / P.mass x) := by rw [pow_add, mul_div_assoc]; ring
 
-end Kolmogorov
+end Kolmogorov.Randomness

@@ -25,7 +25,7 @@ lower semicomputable function on the Cantor space arises this way, so nothing is
   `T(z) = ∑_m 2^m · 1[z has a prefix in Γ_{2m+2}]`.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 open scoped ENNReal
 
@@ -449,4 +449,4 @@ theorem exists_integrableSeqTest_of_constructiveNull (P : ComputableSeqMeasure) 
 
 end NullToTest
 
-end Kolmogorov
+end Kolmogorov.Randomness

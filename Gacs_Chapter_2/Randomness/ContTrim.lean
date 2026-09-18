@@ -33,7 +33,7 @@ computability is obtained by evaluating it level by level on lists (`levelVals`)
 is a `Nat.rec` with list state (`bump_eq_levelVals`, `trimSt_computable`).
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 open scoped ENNReal
 
@@ -277,4 +277,4 @@ theorem getElem?_flatMap_pair (l : List BitString) (i : ℕ) :
         rw [List.getElem?_append_right (by simp), List.getElem?_cons_succ]
         simpa using ih1
 
-end Kolmogorov
+end Kolmogorov.Randomness

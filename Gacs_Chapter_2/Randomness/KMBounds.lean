@@ -22,7 +22,7 @@ i.e. `KM ≤⁺ K ≤⁺ KM + K(|x|)`.
   theorem gives `2^{-K} ≥ 2^{-c} ν`.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 open scoped ENNReal
 
@@ -243,4 +243,4 @@ theorem KM_bounds {M : BitString → ℝ≥0∞} (hM : IsUniversalContSemimeasur
   · exact (h₁ x).trans (mul_le_mul' (pow_le_pow_right₀ (one_le_two : (1 : ℝ≥0∞) ≤ 2) (Nat.le_add_right _ _)) le_rfl)
   · exact (h₂ x).trans (mul_le_mul' (pow_le_pow_right₀ (one_le_two : (1 : ℝ≥0∞) ≤ 2) (Nat.le_add_left _ _)) le_rfl)
 
-end Kolmogorov
+end Kolmogorov.Randomness

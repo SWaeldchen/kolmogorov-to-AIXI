@@ -24,7 +24,7 @@ of `t`), has expectation `∑_k w_k · P{t > 2^k} ≤ ∑_k w_k 2^{-k} = 1`, and
 `t ≤ 2 (k+1)(k+2) · t'` on the level `2^k < t ≤ 2^{k+1}`, i.e. `d' ≥ d − 2 log(d + 2) − 1`.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 open scoped ENNReal
 
@@ -241,4 +241,4 @@ theorem le_mul_mlCorrected {t : BitString → ℝ≥0∞} {x : BitString} {k : �
         exact mlWeight_le_mlCorrected h1
     _ = 2 * (((k + 1) * (k + 2) : ℕ) : ℝ≥0∞) * mlCorrected t x := by ring
 
-end Kolmogorov
+end Kolmogorov.Randomness

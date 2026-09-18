@@ -25,7 +25,7 @@ import Mathlib.Algebra.BigOperators.Fin
   numerators is needed, and none holds.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 open scoped ENNReal
 
@@ -410,4 +410,4 @@ theorem canonical_pushforward_le (U : Map) (hU : IsOptimalPrefixConditional U)
       ≤ 2 ^ c * canonicalIntegrableTest U P x :=
   integrableTest_le_canonical U hU P (canonical_pushforward_comp_isIntegrableTest U hU f hf P)
 
-end Kolmogorov
+end Kolmogorov.Randomness

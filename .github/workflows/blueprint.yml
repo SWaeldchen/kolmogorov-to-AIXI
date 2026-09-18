@@ -45,7 +45,11 @@ jobs:
         with:
           build: true
           lint: true
-          mk_all-check: true
+          # mk_all-check is off on purpose: `lake exe mk_all` regenerates the
+          # library root files without their copyright header, and we keep the
+          # header on KolmogorovMathlib.lean.  Run `lake exe mk_all --check`
+          # locally after adding a file, then restore the header.
+          mk_all-check: false
 
       - name: Compile blueprint and documentation
         uses: leanprover-community/docgen-action@deed0cdc44dd8e5de07a300773eb751d33e32fc8 # 2025-10-26

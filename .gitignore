@@ -11,3 +11,15 @@
 /real.lean
 /t1
 /t2
+
+# Blueprint build products
+/blueprint/print/
+/blueprint/web/
+/blueprint/lean_decls
+/blueprint/src/web.paux
+/blueprint/src/*.aux
+/blueprint/src/*.log
+/blueprint/src/*.out
+/blueprint/src/*.pdf
+/blueprint/src/*.bbl
+/blueprint/src/*.blg

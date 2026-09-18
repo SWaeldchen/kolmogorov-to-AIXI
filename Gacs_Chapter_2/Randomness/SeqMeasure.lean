@@ -26,7 +26,7 @@ import Gacs_Chapter_2.Randomness.Sequences
 * The uniform measure `λ(x) = 2^{-|x|}` as a `ComputableSeqMeasure`.
 -/
 
-namespace Kolmogorov
+namespace Kolmogorov.Randomness
 
 open scoped ENNReal
 
@@ -422,4 +422,4 @@ noncomputable def uniformSeqMeasure : ComputableSeqMeasure where
     · rw [ratVal_one_two_pow]
       exact ⟨le_rfl, le_rfl, le_self_add⟩
 
-end Kolmogorov
+end Kolmogorov.Randomness
