@@ -1,18 +1,138 @@
-% In this file you should put all LaTeX macros and settings to be used both by
-% the pdf version and the web version.
-% This should be most of your macros.
+% Macros shared by the printed and the web version of the blueprint.
+% Both blueprint/src/web.tex and blueprint/src/print.tex \input this file.
+%
+% The notation follows Peter Gacs, "Descriptional Complexity and Randomness"
+% (arXiv:2105.04704).  The definitions below are reproduced, with the author's
+% permission, from his style file gacs.sty and from the preamble of his
+% manuscript, restricted to what Chapter 1 actually uses.  Three kinds of
+% adjustment were needed, and are marked in place:
+%   (1) definitions made with \def are restated with \newcommand,
+%   (2) font-switching text macros are reduced to \text,
+%   (3) his list environments used package options that plasTeX, which builds
+%       the web version, does not implement.
+%
+% Do not define \lean, \leanok, \uses, \proves, \notready, \discussion or
+% \mathlibok here: the web version gets them from the blueprint plasTeX
+% plugin and the printed version from macros/print.tex.
 
-% The theorem-like environments defined below are those that appear by default
-% in the dependency graph. See the README of leanblueprint if you need help to
-% customize this. 
-% The configuration below use the theorem counter for all those environments
-% (this is what the [theorem] arguments mean) and never resets it.
-% If you want for instance to number them within chapters then you can add
-% [chapter] at the end of the next line.
-\newtheorem{theorem}{Theorem}
-\newtheorem{proposition}[theorem]{Proposition}
-\newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{corollary}[theorem]{Corollary}
+% ---------------------------------------------------------------------------
+% Theorem environments
+% ---------------------------------------------------------------------------
+% Gacs runs two independent counters, both reset at every section.  Theorems
+% have one of their own; lemmas, propositions, corollaries, definitions,
+% remarks and examples share the other.  This is why his text contains both a
+% Theorem 1.4.2 and a Corollary 1.4.2.  Reproducing it keeps every reference
+% in the blueprint equal to the number printed in his manuscript.
+%
+% This assumes a document class with chapters (report or book) and a single
+% \chapter for Chapter 1, so that the section counter reads 1.3, 1.4 and so on.
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{corollary}[lemma]{Corollary}
 
 \theoremstyle{definition}
-\newtheorem{definition}[theorem]{Definition}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{example}[lemma]{Example}
+
+\theoremstyle{remark}
+\newtheorem{remark}[lemma]{Remark}
+
+% Used to flag every place where the Lean statement departs from the printed
+% one.  Unnumbered, so it never enters the dependency graph.
+\newtheorem*{formalization}{Formalization note}
+
+\theoremstyle{plain}
+
+% ---------------------------------------------------------------------------
+% Lists
+% ---------------------------------------------------------------------------
+% (3) His originals take enumitem key-value options, which plasTeX does not
+% implement.  The enumerate package, which it does implement, gives the same
+% result.  Caveat: the printed version shows (a), (b) and (i) as intended,
+% while plasTeX drops the label option and the web version falls back to
+% 1., 2.  Fixing that needs a CSS rule, not a change here.
+
+\usepackage{enumerate}
+\newenvironment{alphenum}{\begin{enumerate}[(a)]}{\end{enumerate}}
+\newenvironment{romanenum}{\begin{enumerate}[(i)]}{\end{enumerate}}
+\newenvironment{bullets}{\begin{itemize}}{\end{itemize}}
+
+% ---------------------------------------------------------------------------
+% Number systems and script letters
+% ---------------------------------------------------------------------------
+\newcommand{\dB}{\mathbb{B}}
+\newcommand{\dC}{\mathbb{C}}
+\newcommand{\dN}{\mathbb{N}}
+\newcommand{\dQ}{\mathbb{Q}}
+\newcommand{\dR}{\mathbb{R}}
+\newcommand{\dS}{\mathbb{S}}
+\newcommand{\dZ}{\mathbb{Z}}
+
+\newcommand{\cF}{\mathcal{F}}
+\newcommand{\cG}{\mathcal{G}}
+\newcommand{\cI}{\mathcal{I}}
+\newcommand{\cM}{\mathcal{M}}
+\newcommand{\cQ}{\mathcal{Q}}
+\newcommand{\cT}{\mathcal{T}}
+\newcommand{\cV}{\mathcal{V}}
+
+% ---------------------------------------------------------------------------
+% Greek abbreviations
+% ---------------------------------------------------------------------------
+\newcommand{\ag}{\alpha}
+\newcommand{\bg}{\beta}
+\newcommand{\dg}{\delta}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\ig}{\iota}
+\newcommand{\og}{\omega}
+\newcommand{\Lg}{\Lambda}
+\newcommand{\Og}{\Omega}
+
+% ---------------------------------------------------------------------------
+% Relations up to an additive or a multiplicative constant
+% ---------------------------------------------------------------------------
+% These four are the heart of his notation: a plus or a star under the
+% relation means "up to an additive constant" or "up to a constant factor".
+\newcommand{\lea}{\stackrel{{}_+}{<}}
+\newcommand{\gea}{\stackrel{{}_+}{>}}
+\newcommand{\eqa}{\stackrel{{}_+}{=}}
+\newcommand{\lem}{\stackrel{{}_*}{<}}
+\newcommand{\gem}{\stackrel{{}_*}{>}}
+\newcommand{\eqm}{\stackrel{{}_*}{=}}
+
+\newcommand{\sbsq}{\subseteq}
+\newcommand{\prefix}{\sqsubseteq}
+
+% ---------------------------------------------------------------------------
+% Delimiters and spacing
+% ---------------------------------------------------------------------------
+\newcommand{\verythinmathskip}{\mskip 1mu}
+\newcommand{\setof}[1]{\mathopen\{\verythinmathskip#1\verythinmathskip\mathclose\}}
+\newcommand{\ang}[1]{{\mathopen\langle #1\mathclose\rangle}}
+\newcommand{\tup}[1]{(#1)}
+\newcommand{\pair}[2]{\mathopen(#1,#2\mathclose)}
+\newcommand{\tupcod}[1]{\mathopen\langle #1\mathclose\rangle}
+\newcommand{\tupdec}[1]{\mathopen[#1\mathclose]}
+\newcommand{\cei}[1]{{\lceil #1\rceil}}
+\newcommand{\flo}[1]{{\lfloor #1\rfloor}}
+\newcommand{\ol}[1]{\overline{#1}}
+\newcommand{\card}[1]{|#1|}
+\newcommand{\clint}[2]{[#1,#2]}
+\newcommand{\opint}[2]{(#1,#2)}
+\newcommand{\rint}[2]{(#1,#2]}
+
+% The conditioning bar, as in K(x \mvert y).
+\newcommand{\mvert}{\,\vert\,}
+
+% ---------------------------------------------------------------------------
+% Complexity-specific notation
+% ---------------------------------------------------------------------------
+\newcommand{\len}[1]{l(#1)}          % length of a string
+\newcommand{\m}{\mathbf{m}}          % (1) his \def\m{\mathbf{m}}
+\newcommand{\frto}[2]{#1:#2}         % the range in \xi_{\frto{1}{n}}
+\newcommand{\txt}[1]{\text{#1}}      % (2) font switches dropped
+\newcommand{\cnv}{\txt{cnv}}
+\newcommand{\df}[1]{\emph{#1}}       % his emphasis for a term being defined
+\newcommand{\nn}{\nonumber}

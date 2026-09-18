@@ -21,10 +21,12 @@ rev = "v4.32.1"
 name = "checkdecls"
 git = "https://github.com/PatrickMassot/checkdecls.git"
 
-[[require]]
-name = "«doc-gen4»"
-git = "https://github.com/leanprover/doc-gen4"
-rev = "main"
+# Do NOT require doc-gen4 here (leanblueprint adds it by default; it was removed).
+# doc-gen4 requires Cli directly, which overrides the Cli revision Mathlib pins
+# transitively via importGraph; `lake exe cache get` then computes wrong hashes and
+# refuses to fetch. CI builds the API docs with leanprover-community/docgen-action,
+# which isolates doc-gen4 in its own `docbuild/` workspace. See Learnings.md.
+
 [[lean_lib]]
 name = "KolmogorovMathlib"
 
