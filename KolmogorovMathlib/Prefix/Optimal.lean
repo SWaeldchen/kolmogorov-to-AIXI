@@ -49,16 +49,22 @@ theorem IsPrefixDecompressor.isPrefixMachine {M : Map}
 
 /-! ### Optimal prefix decompressors -/
 
+/-- `U` **dominates** `M` on conditional prefix complexity if a single constant
+`c`, chosen once and for all, absorbs the whole gap between them: every `x` given
+`y` has a `U`-description at most `c` bits longer than its shortest
+`M`-description. This is the `KP` analogue of `DominatesCondK`. -/
+abbrev DominatesKP (U M : Map) : Prop :=
+  ∃ c : ℕ, ∀ x y, KP U x y ≤ KP M x y + (c : ENat)
+
 /-- A map `U` is an **optimal prefix decompressor** if it is itself a prefix
-decompressor and it simulates every other prefix decompressor `M` with at most a
-constant additive overhead in conditional prefix complexity `KP`.
+decompressor and it dominates every other prefix decompressor `M` on conditional
+prefix complexity `KP`, i.e. simulates it with at most a constant additive
+overhead.
 
 This mirrors `isOptimalConditional` but quantifies *only* over prefix
 decompressors, which is the correct universe for prefix complexity. -/
 def IsOptimalPrefixConditional (U : Map) : Prop :=
-  IsPrefixDecompressor U ∧
-    ∀ M, IsPrefixDecompressor M →
-      ∃ c : ℕ, ∀ x y, KP U x y ≤ KP M x y + (c : ENat)
+  IsPrefixDecompressor U ∧ ∀ M, IsPrefixDecompressor M → DominatesKP U M
 
 /-- An optimal prefix decompressor is a prefix decompressor. -/
 theorem IsOptimalPrefixConditional.isPrefixDecompressor {U : Map}

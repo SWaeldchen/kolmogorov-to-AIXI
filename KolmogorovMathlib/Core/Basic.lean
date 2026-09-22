@@ -62,11 +62,17 @@ noncomputable def plainK (D : Map) (x : BitString) : ENat :=
 
 /-! ### Optimality (Universality) -/
 
-/-- A map `U` is optimal (universal) if it can simulate any other
-    computable decompressor `D` with at most a constant additive overhead `c`
-    to the program length. -/
+/-- `U` **dominates** `D` on conditional complexity if a single constant `c`,
+    chosen once and for all, absorbs the whole gap between them: every `x` given
+    `y` has a `U`-description at most `c` bits longer than its shortest
+    `D`-description. -/
+abbrev DominatesCondK (U D : Map) : Prop :=
+  ∃ c : ℕ, ∀ x y, condK U x y ≤ condK D x y + (c : ENat)
+
+/-- A map `U` is optimal (universal) if it is itself a decompressor and dominates
+    every other computable decompressor `D`, i.e. it can simulate any such `D`
+    with at most a constant additive overhead to the program length. -/
 def isOptimalConditional (U : Map) : Prop :=
-  isDecompressor U ∧
-  ∀ D, isDecompressor D → ∃ c : ℕ, ∀ x y, condK U x y ≤ condK D x y + (c : ENat)
+  isDecompressor U ∧ ∀ D, isDecompressor D → DominatesCondK U D
 
 end Kolmogorov
