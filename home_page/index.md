@@ -13,12 +13,16 @@ declaration. Where our formalized statement departs from the printed one, a
 **formalization note** says so and explains why.
 
 Chapter 1 is formalized, with no `sorry` and no additional axioms beyond the three
-standard ones that Mathlib itself uses. Two items are stated in the blueprint without
+standard ones that Mathlib itself uses. Two results are stated in the blueprint without
 being formalized, and show as open nodes in the dependency graph. Clauses (a) and (d) of
 Proposition 1.5.5 concern functions of a real variable, a setting this library does not
 develop. Theorem 1.6.4, on exact domination, is not proved; the library has the ordinary
 domination of every lower semicomputable semimeasure by the universal one, but not that
-sharpened form.
+sharpened form. Five side definitions of Gács's text also have no Lean counterpart,
+because nothing formalized depends on them: the universal lower semicomputable function
+$S_p$ and its Gödel numbers, simple sets, first shortest descriptions, and the
+linear-overhead universal machine used in his proof of Theorem 1.7.4 (the Lean proof
+does not need it). Each carries a formalization note in the blueprint saying so.
 
 Useful links:
 

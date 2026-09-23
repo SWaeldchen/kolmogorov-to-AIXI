@@ -146,14 +146,22 @@ Then we have
 % Gacs source line 901
  \begin{definition}
   \label{def:fixed-U}
+  \lean{Kolmogorov.isOptimalConditional, Kolmogorov.existsIsOptimalConditional}
+  \leanok
   \uses{thm:invar, def:complexity}
 We fix an optimal binary p.r.~interpreter \( U \) and write 
 \( C(x \mvert y) \) for \( C_U(x \mvert y) \). 
  \end{definition}
+\begin{formalization}
+No machine is fixed. Every result takes the interpreter $U$ and the hypothesis \texttt{isOptimalConditional U} as parameters, and \texttt{existsIsOptimalConditional} (Theorem~\ref{thm:invar}) supplies one.
+\end{formalization}
+
 
 % Gacs source line 919
  \begin{definition}
   \label{def:tuples}
+  \lean{Kolmogorov.plainK, Kolmogorov.listCode}
+  \leanok
   \uses{def:fixed-U}
 We define \( U_{p}(x_{1},\ldots,x_{k}) = U_{p}(\ang{ x_{1}\,\ldots, x_{k}}) \). 
 Similarly,
@@ -164,10 +172,15 @@ We therefore define
  \[ U(p) = U(p,\Lg).
  \]
  \end{definition}
+\begin{formalization}
+$U(p) = U(p,\Lambda)$ is the empty context of \texttt{plainK}; tuples are coded by \texttt{listCode}.
+\end{formalization}
+
 
 % Gacs source line 954
  \begin{definition}
   \label{def:additive-order}
+  \leanok
 The relation 
 \( f \lea g \) means inequality to within an additive constant, that
 there is a constant \( c \) such that for all \( x \), \( f(x) \le g(x) \). 
@@ -183,6 +196,10 @@ We also say that
 \( g \) \df{multiplicatively dominates} \( f \). 
 The relation \( f\eqm g \) means \( f \lem g \) and \( f \gem g \).
  \end{definition}
+\begin{formalization}
+No notation is introduced in Lean. Every statement carries its constant explicitly, in the shape $\exists c,\ \forall x,\ f(x) \le g(x) + c$, and multiplicative bounds are written in $[0,\infty]$ as $2^{-c} \cdot f \le g$.
+\end{formalization}
+
 
 % Gacs source line 973
 \begin{theorem}
@@ -208,6 +225,12 @@ The following simple upper bound holds.
   \leanok
   \uses{thm:upbd}  \( \lim_{n\to\infty} C(n) = \infty \).
 \end{corollary}
+\begin{proof}
+  \leanok
+  \uses{thm:upbd}
+  Only finitely many objects have complexity at most $k$, since there are fewer than $2^{k+1}$ programs of length at most $k$; so $C(n) \to \infty$.
+\end{proof}
+
 
 % Gacs source line 993
 \begin{proof}[Proof of Theorem \protect\ref{thm:upbd}]
@@ -274,6 +297,8 @@ define \( B(\ig(q)p,x) = U(p,U_{q}(x)) \).
 % Gacs source line 1089
  \begin{definition}
   \label{def:pair-complexity}
+  \lean{Kolmogorov.pairCode, Kolmogorov.KPPair}
+  \leanok
   \uses{def:tuples, def:fixed-U}
 The definition of conditional complexity is extended to pairs, etc. by 
  \[
@@ -281,6 +306,10 @@ The definition of conditional complexity is extended to pairs, etc. by
 	= C(\ang{ x_{1},\ldots,x_{m}}  \mvert \ang{ y_{1},\ldots,y_{n}} ).
  \]
  \end{definition}
+\begin{formalization}
+Pairs are coded by the prefix-free \texttt{pairCode}, longer tuples by \texttt{listCode}; a complexity of a tuple is the complexity of its code, so $C(x,y)$ is \texttt{plainK U (pairCode x y)} and \texttt{KPPair} is the prefix case.
+\end{formalization}
+
 
 % Gacs source line 1099
 \begin{corollary}
@@ -302,6 +331,12 @@ The definition of conditional complexity is extended to pairs, etc. by
   \\	C(x \mvert x,z)	&\eqa  C(x \mvert x) \eqa 0.  \nn		
  \end{align}
  \end{corollary}
+\begin{proof}
+  \leanok
+  \uses{thm:rectransf, def:pair-complexity}
+  Each inequality is Theorem~\ref{thm:rectransf} applied to a suitable p.r.\ function: $U_p$ (and, for the two-sided bound, its one-to-one inverse), and the pairing and projection maps of Definition~\ref{def:pair-complexity}.
+\end{proof}
+
 
 % Gacs source line 1124
  \begin{theorem}
@@ -338,6 +373,12 @@ C(U_{p}(x,y)) &\lea  J(C(x)) + C(y \mvert x) + J(\len{p})
  	C(x,y) \lea J(C(x)) + C(y).
  \]
  \end{corollary}
+\begin{proof}
+  \leanok
+  \uses{thm:rectransf, thm:addit}
+  Theorem~\ref{thm:rectransf} for $U_p$ composed with the pairing map bounds $C(U_p(x,y))$ by $C(x,y) + J(\len{p})$; Theorem~\ref{thm:addit} bounds $C(x,y)$.
+\end{proof}
+
 
 This corollary implies the following continuity property of the function \( C(n) \):
 for any natural numbers \( n,h \), we have
@@ -407,6 +448,12 @@ Then \( C_A(x,C(x)) \le C(x) \).
 C(y\mvert x,\ i-C(y\mvert x,i)) \lea C(y\mvert x,i).
  \]
  \end{theorem}
+\begin{proof}
+  \leanok
+  \uses{def:pair-complexity}
+  Let $q$ be a shortest program for $y$ given $\ang{x,i}$, so $\len{q} = C(y \mvert x,i)$. From $x$, the number $i - \len{q}$ and $q$ itself one recovers $i = (i - \len{q}) + \len{q}$ and then $y$. So $q$ serves, up to a constant, as a description of $y$ given $\ang{x,\, i - C(y \mvert x,i)}$.
+\end{proof}
+
 
 %%%% ===================== SECTION 1.5 Algorithmic properties of complexity =====================
 
@@ -517,6 +564,10 @@ There is no universal computable function, but for any computable
 function \( g \), we call any number \(  \tupcod{  \tupcod{ p } , \tupcod{ q } }  \) 
 a G\"odel number of \( g \) if \( g=S_{p}=-S_{q} \).
  \end{definition}
+\begin{formalization}
+The universal lower semicomputable function $S_p$ and its G\"odel numbers are not formalised as such. The library enumerates lower semicomputable semimeasure approximations instead (\texttt{IsLSC}, \texttt{lscEnum}), which is all Chapter~1 uses of them; no formalised result depends on this definition or on Definition~\ref{def:universal-lsc}.
+\end{formalization}
+
 
 % Gacs source line 1371
 \begin{theorem}
@@ -583,6 +634,10 @@ applying Corollary~\ref{cy:funcofpair} and~\eqref{eq:binupbd} we get
 A computably enumerable set is \df{simple} if its complement is infinite but
 does not contain any infinite computably enumerable subsets. 
  \end{definition}
+\begin{formalization}
+Not formalised; no formalised result depends on it.
+\end{formalization}
+
 
 % Gacs source line 1464
 \begin{corollary}
@@ -669,6 +724,8 @@ the technical heart of the chapter.
 % Gacs source line 1547
  \begin{definition}
   \label{def:prefix-free}
+  \lean{Kolmogorov.IsPrefixFree, Kolmogorov.IsPrefixMachine}
+  \leanok
 A set of strings is called \df{prefix-free} if for any pair \( x,y \) of
 elements in it, \( x \) is not a prefix of \( y \).
 
@@ -936,6 +993,8 @@ Noting \( \m'(x) \eqm \m(x) \) finishes the proof.
 % Gacs source line 1826
  \begin{definition}
   \label{def:code}
+  \lean{Kolmogorov.Map, Kolmogorov.IsPrefixFree}
+  \leanok
   \uses{def:prefix-free}
 A (binary) \df{code} is any
 mapping from a set \( E \) of binary sequences to a set of objects. 
@@ -945,6 +1004,10 @@ one-to-one, then sometimes the set \( E \) itself is also called a code.
 
 A code is a \df{prefix code} if \( E \) is a prefix-free set.
  \end{definition}
+\begin{formalization}
+A code is a \texttt{Map}, read as its decoding function; it is a prefix code when its domain \texttt{IsPrefixFree}.
+\end{formalization}
+
 
 % Gacs source line 1838
 \begin{definition}
@@ -954,6 +1017,10 @@ We call string \( p \) the first
 shortest description of \( x \) if it is the lexicographically first
 binary word \( q \) with \( |q| = C(x) \) and \( U(q)=x \). 
 \end{definition}
+\begin{formalization}
+Not formalised; no formalised result depends on it.
+\end{formalization}
+
 
 % Gacs source line 1853
  \begin{lemma}[Kraft's Inequality, see~\protect\cite{CsiszarKornerBook81}]
@@ -1125,7 +1192,7 @@ Theorem~\ref{thm:sdopt}.
  \end{theorem}
 
 \begin{formalization}
-Formalized in the multiplicative form $2^{-n} f(x,n) \eqm \m(x,n)$ that the proof below actually establishes, in $[0,\infty]$ rather than through logarithms. The two halves are separate results, and the lower half carries the hypothesis $n \ge K(x,n) + c$, which is what the padding argument consumes. That hypothesis is stronger than the printed $n \ge K(x)$ by up to a logarithmic term; in the gap between them the printed claim needs $x$ to have a program of length exactly $n$, which holds at $n = K(x)$ but is not proved in the interior.
+Formalized in the multiplicative form $2^{-n} f(x,n) \eqm \m(x,n)$ that the proof below actually establishes, in $[0,\infty]$ rather than through logarithms. The two halves are separate results; the lower half is stated for $n \ge K(x) + c$, the printed hypothesis shifted by a constant that depends only on $T$.
 \end{formalization}
 
 % Gacs source line 2040
@@ -1136,6 +1203,12 @@ Formalized in the multiplicative form $2^{-n} f(x,n) \eqm \m(x,n)$ that the proo
   \uses{thm:Hstat} The number of shortest descriptions of any object is
 bounded by a universal constant.
  \end{corollary}
+\begin{proof}
+  \leanok
+  \uses{thm:Hstat}
+  Take $n = K(x)$ in the upper half of Theorem~\ref{thm:Hstat}, which carries no hypothesis: $f(x,K(x)) \lem 2^{K(x)}\, \m(x,K(x)) \lem 2^{K(x) - K(x,K(x))} \lem 1$, since $K(x) \lea K(x,K(x))$.
+\end{proof}
+
 
 % Gacs source line 2052
 \begin{proof}[Proof of Theorem \protect\ref{thm:Hstat}]
@@ -1175,9 +1248,15 @@ $T(q) = \tupcod{ x,n}$, and $w$ an arbitrary string of length
 $n$ with $T(p) = x$.
  \end{proof}
 
+\begin{formalization}
+The padding step needs $l \ge 0$, that is $n \ge K(x,n) + c_0$ with $c_0 = r + \len{\bg(r)^o}$, which exceeds the stated $n \ge K(x)$ by up to $\log n$. It is formalized as a separate lemma under that hypothesis. The window $K(x) + c \le n < K(x,n) + c_0$ is closed by a second machine $G'(1^k 0\, p) = T(p)$, which pads with a self-delimiting filler instead of stating a length: universality gives a tag $g'$ with $T(g' 1^k 0\, q) = x$ for a shortest program $q$ of $x$ and every $k$, so $f(x,n) \ge 1$ for all $n \ge K(x) + \len{g'} + 1$, and in the window a single program already gives $2^{-n} f(x,n) \ge 2^{-n} > 2^{-K(x,n) - c_0} \gem \m(x,n)$.
+\end{formalization}
+
 % Gacs source line 2089
  \begin{definition}
   \label{def:Dn}
+  \lean{Kolmogorov.haltSet, Kolmogorov.haltCount, Kolmogorov.windowCount}
+  \leanok
   \uses{def:K}
   Let $g_{T}(n)$ be the number of objects $x \in \dS$ with $K(x)=n$, and $D_{n}$
 the set of binary strings $p$ of length $n$ for which $T(p)$ is
@@ -1322,6 +1401,8 @@ property that $G(n)=K(n)$ holds for infinitely many $n$.
 % Gacs source line 2241
  \begin{definition}
   \label{def:K-with-time}
+  \lean{Kolmogorov.evalFuel, Kolmogorov.KFuel, Kolmogorov.trivBound}
+  \leanok
   \uses{def:K}
 We know that for some constant $c$, the
 function $K(n)$ is bounded by $2\log n + c$.
@@ -1347,6 +1428,10 @@ optimal s.d.~interpreter $T$, and let us write
   K(n,t)=K_{\cT}(n,t).
  \end{align*}
  \end{definition}
+\begin{formalization}
+Not formalised, and not needed. The Lean proof of Theorem~\ref{thm:infsharp} bounds its search by a fuel value that is computable outright, by \texttt{Computable.natFind} over finitely many halting candidates, so no assumption about simulation overhead between machines enters; see the module docstring of \texttt{Solovay.lean}.
+\end{formalization}
+
 
 With these definitions, for each self-delimiting Turing machine \( \cM \) there are
 constants \( m_{0},m_{1} \) with

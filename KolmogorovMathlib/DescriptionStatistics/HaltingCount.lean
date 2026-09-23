@@ -193,7 +193,7 @@ theorem aprioriMeasure_le_haltCount (U : Map) (hU : IsPrefixPrependUniversal U) 
       (2 : ℝ≥0∞)⁻¹ ^ c₁ * aprioriMeasure U (natCode n) []
         ≤ (2 : ℝ≥0∞)⁻¹ ^ n * (haltCount U n : ℝ≥0∞) := by
   have hUo := hU.isOptimalPrefixConditional
-  obtain ⟨d₀, d₁, hlow⟩ := aprioriMeasure_pair_le_progCount U hU
+  obtain ⟨d₀, d₁, hlow⟩ := aprioriMeasure_pair_le_progCount_of_KPPair_add_le U hU
   obtain ⟨c₂, hc₂⟩ := KPPlain_pairCode_nil_le U hUo
   obtain ⟨e₁, he₁⟩ := aprioriMeasure_le_complexityWeight_optimal hUo hUo.isPrefixDecompressor
   refine ⟨c₂ + d₀, d₀ + d₁ + e₁ + c₂, fun n hn ↦ ?_⟩
