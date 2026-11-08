@@ -35,6 +35,21 @@ jobs:
           docker-images: false
           swap-storage: false
 
+      # The API-docs step of docgen-action runs doc-gen4 on the whole import
+      # closure (Mathlib included, ~6300 jobs), several processes at a time, and
+      # Lake has no option to lower that parallelism.  With three libraries it
+      # ran out of memory on the standard runner ("failed to execute doc-gen4:
+      # cannot allocate memory").  Extra swap on the large /mnt disk lets it
+      # finish instead of failing.
+      - name: Add swap space
+        run: |
+          sudo fallocate -l 16G /mnt/extra.swap
+          sudo chmod 600 /mnt/extra.swap
+          sudo mkswap /mnt/extra.swap
+          sudo swapon /mnt/extra.swap
+          free -h
+          df -h / /mnt
+
       - name: Checkout project
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
