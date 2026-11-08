@@ -21,7 +21,10 @@ permissions:
 
 jobs:
   build_project:
-    runs-on: ubuntu-latest
+    # Pinned: since October 2026 ubuntu-latest is Ubuntu 26.04, which the
+    # ruby/setup-ruby version pinned inside docgen-action (for the Jekyll home
+    # page) does not recognize ("detected as self-hosted").
+    runs-on: ubuntu-24.04
     name: Build project
     steps:
       - name: Cleanup to free disk space
@@ -36,26 +39,18 @@ jobs:
           swap-storage: false
 
       # The API-docs step of docgen-action runs doc-gen4 on the whole import
-      # closure (Mathlib included, ~6300 jobs), several processes at a time, and
-      # Lake has no option to lower that parallelism.  Since November 2026 it
-      # fails with "resource exhausted (error code: 12, cannot allocate memory)"
-      # when Lake starts a process; 16G of extra swap alone did not help.
-      # Under investigation: the steps below report the memory settings and the
-      # memory curve as annotations (readable without login through the
-      # check-runs API), and let the kernel overcommit, so that starting a
-      # process is not refused on accounting grounds.
-      - name: Add swap space and allow overcommit
+      # closure (Mathlib included, ~6300 jobs).  The doc-gen4 processes reserve
+      # far more address space than they use: on 2026-11-08 the committed total
+      # peaked at ~300G while real use stayed under 4G of the 16G.  Under the
+      # default heuristic overcommit the kernel then refuses to start further
+      # processes ("resource exhausted (error code: 12, cannot allocate
+      # memory)").  Always allowing overcommit fixes it; extra swap does not.
+      - name: Allow memory overcommit
         run: |
-          sudo fallocate -l 16G /mnt/extra.swap
-          sudo chmod 600 /mnt/extra.swap
-          sudo mkswap /mnt/extra.swap
-          sudo swapon /mnt/extra.swap
-          before="overcommit_memory=$(cat /proc/sys/vm/overcommit_memory) ratio=$(cat /proc/sys/vm/overcommit_ratio)"
+          before="overcommit_memory=$(cat /proc/sys/vm/overcommit_memory)"
           sudo sysctl -w vm.overcommit_memory=1
           meminfo=$(awk '/MemTotal|SwapTotal|CommitLimit|Committed_AS/{printf "%s%dM ", $1, $2/1024}' /proc/meminfo)
-          echo "::notice title=runner memory settings::${before} -> now $(cat /proc/sys/vm/overcommit_memory); ${meminfo}; nproc=$(nproc); max_map_count=$(cat /proc/sys/vm/max_map_count); $(. /etc/os-release; echo $PRETTY_NAME); kernel $(uname -r)"
-          free -h
-          df -h / /mnt
+          echo "::notice title=runner memory settings::${before} -> now $(cat /proc/sys/vm/overcommit_memory); ${meminfo}; nproc=$(nproc); $(. /etc/os-release; echo $PRETTY_NAME); kernel $(uname -r)"
 
       - name: Start memory monitor
         run: |
