@@ -3,3 +3,7 @@
 % version in macros/print.tex.
 % Typically the printed version could have more fancy decorations.
 % This will probably be a very short file.
+% Invisible carrier for the status of a formalized ourdefinition (see
+% macros/common.tex).  plasTeX keeps the environment as a node, which is what
+% \proves and \leanok attach to; it renders nothing.
+\newenvironment{definedinlean}{}{}

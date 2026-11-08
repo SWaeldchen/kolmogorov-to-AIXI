@@ -27,3 +27,6 @@
  {\clist_map_inline:nn{#1}{\vphantom{\ref{##1}}}%
   \ignorespaces}
 \ExplSyntaxOff
+% Invisible carrier for the status of a formalized ourdefinition (see
+% macros/common.tex): its content is typeset into a box that is thrown away.
+\newenvironment{definedinlean}{\setbox0=\hbox\bgroup}{\egroup}

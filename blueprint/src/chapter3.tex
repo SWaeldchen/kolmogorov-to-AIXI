@@ -1,0 +1,1870 @@
+% ===========================================================================
+% Chapter 3: Information
+% ===========================================================================
+% Peter Gacs, "Descriptional Complexity and Randomness" (arXiv:2105.04704),
+% Chapter 3, source lines 3757-4870.  His statements and proofs are reproduced
+% verbatim, with the author's permission; the Lean annotations, the dependency
+% edges, the formalization notes and the few proof environments marked "ours"
+% are not his.  Lean side: Gacs_Chapter_3/ (see Gacs_Chapter_3/strategy.md).
+%
+% Numbering: as in content.tex, theorems run on one counter per section and all
+% other numbered environments share a second one, so every theorem, lemma,
+% definition and remark below carries the number printed in his manuscript.
+% Equations are numbered per chapter here and per section in his manuscript.
+%
+% Labels: his \label{...} is kept.  A numbered item he did not label is
+% labelled <kind>:g<number>, e.g. thm:g3.1.4 for his Theorem 3.1.4.
+%
+% References into Chapter 1 whose targets content.tex does not reproduce
+% (Section 1.6, Subsection 1.6.3, equations (1.6.4), (1.6.13), (1.7.2)) are
+% given as plain numbers.  References to his Chapter 2 keep his labels.
+
+\chapter{Information}
+
+This chapter reproduces Chapter~3 of G\'acs' manuscript~\cite{Gacs2021} and records how
+each of its results is formalized in Lean. Every numbered definition, theorem, lemma,
+proposition and corollary of the chapter is formalized, with no \texttt{sorry}, and so are
+Remarks~\ref{rem:inf-def-rand} and~\ref{rem:g3.1.16}. Only informal asides are left out,
+among them Remark~\ref{rem:g3.1.13} and the claim that \( K^{*} \) is not semicomputable;
+the formalization notes say where. Theorem~\ref{thm:co-rarely-co} and
+Lemma~\ref{lem:co-co-rare} are formalized in a sharper form than the printed one.
+
+Some conventions of the formalization are used throughout. For an optimal prefix machine
+\( U \) every complexity is finite, so the Lean code works with natural numbers:
+\texttt{Kolmogorov.Information.Kc U x y} is \( K(x \mvert y) \) and
+\texttt{Kolmogorov.Information.Ku U x} is \( K(x) \). A relation \( f \lea g \) is stated as
+``there is a \( c \) with \( f \le g + c \) for all arguments'', over the integers when
+differences occur (\texttt{Kolmogorov.Information.AddLE},
+\texttt{Kolmogorov.Information.AddEq}). Pairs are encoded by \texttt{Kolmogorov.pairCode}, and
+a number inside a complexity, such as \( K(x) \) in \( K(y \mvert x, K(x)) \), by the unary
+code \texttt{Kolmogorov.natCode}; any other computable encoding changes the complexities
+by \( O(1) \). Classical entropies take values in \( [0, \infty] \), so identities that
+involve no subtraction hold with no finiteness hypothesis.
+
+\section{Information-theoretic relations} 
+
+In this subsection, we use some material
+from~\cite{GacsTrompVitAlgorStat00}.
+
+\subsection{The information-theoretic identity}
+
+Information-theoretic entropy is related to complexity in both a formal and a
+more substantial way.
+
+\subsubsection{Classical entropy and classical coding}
+
+Entropy is used in information theory in order to characterize the
+compressibility of a statistical source.
+
+% Gacs source line 3774
+ \begin{definition}
+  \label{def:g3.1.1}
+  \lean{Kolmogorov.Information.Classical.entropy}
+  \leanok
+The \df{entropy} of a discrete probability distribution \( P \) is defined as
+ \[
+   \cH(P) = -\sum_{x} P(x)\log P(x).
+ \]
+ \end{definition}
+
+\begin{formalization}
+A distribution is a function \( P \colon \alpha \to [0, \infty] \) of total mass one on a
+type \( \alpha \), and the entropy is measured in bits with values in \( [0, \infty] \), so a
+distribution of infinite entropy is allowed.
+\end{formalization}
+
+A simple argument shows that this quantity is non-negative.
+It is instructive to recall a more general inequality, taken
+from~\cite{CsiszarKornerBook81}, implying it:
+
+% Gacs source line 3784
+ \begin{theorem}\label{thm:CsiszarConc}
+  \lean{Kolmogorov.Information.Classical.log_sum_inequality, Kolmogorov.Information.Classical.log_sum_eq_iff, Kolmogorov.Information.Classical.log_sum_nonneg}
+  \leanok
+Let \( a_{i}, b_{i} > 0 \), \( a = \sum_{i} a_{i} \), \( b = \sum_{i} b_{i} \).
+Then we have
+ \begin{equation}\label{eq:CsiszarConc}
+  \sum_{i} a_{i} \log \frac{a_{i}}{b_{i}} \ge a \log \frac{a}{b},
+ \end{equation}
+with equality only if \( a_{i}/b_{i} \) is constant.
+In particular, if \( \sum_{i}a_{i}=1 \) and \( \sum_{i}b_{i}\le 1 \) then we have
+\( \sum_{i} a_{i} \log \frac{a_{i}}{b_{i}}\ge 0 \).
+ \end{theorem}
+
+\begin{formalization}
+Stated for a finite index set, with real logarithms. The equality case is proved as an
+equivalence: equality holds if and only if \( a_{i}/b_{i} = a/b \) for all \( i \).
+\end{formalization}
+
+% Gacs source line 3795
+\begin{proof}
+  \proves{thm:CsiszarConc}
+  \leanok
+Exercise, an application of Jensen's inequality to the
+concave function \( \log x \).
+\end{proof}
+
+\begin{formalization}
+The Lean proof applies Jensen's inequality to the strictly convex function \( x \log x \)
+(Mathlib), which also gives the equality case.
+\end{formalization}
+
+If \( P \) is a probability distribution and \( Q(x) \ge 0 \), 
+\( \sum_{x} Q(x) \le 1 \) then this inequality implies
+ \[
+   K(P) \le \sum_{x} P(x) \log Q(x).
+ \]
+We can interpret this inequality as follows.
+We have seen in Subsection~1.6.3 that if
+\( x \mapsto z_{x} \) is a prefix code, mapping the objects \( x \) into binary
+strings \( z_{x} \) that are not prefixes of each other then
+\( \sum_{x} 2^{-\len{z_{x}}} \le 1 \).
+Thus, substituting \( Q(x) = 2^{-\len{z_{x}}} \) above we obtain Shannon's result:
+
+% Gacs source line 3811
+ \begin{theorem}[Shannon]\label{thm:Shannon-coding-lb}
+  \lean{Kolmogorov.Information.Classical.shannon_coding_lb}
+  \leanok
+  \uses{def:g3.1.1}
+If \( x \mapsto z_{x} \) is a prefix code then for its expected codeword length
+we have the lower bound:
+ \[
+   \sum_{x} P(x) \len{z_{x}} \ge K(P).
+ \]
+ \end{theorem}
+
+\begin{formalization}
+Here and in the inequality before the theorem, \( K(P) \) stands for the entropy
+\( \cH(P) \), as in the next paragraph, and that inequality reads
+\( \cH(P) \le -\sum_{x} P(x) \log Q(x) \) (Gibbs' inequality,
+\texttt{Kolmogorov.Information.Classical.entropy\_le\_crossEntropy}). The Lean statement
+bounds the expected length from below by \( \cH(P) \), for a code on a countable type in which
+no codeword is a prefix of the codeword of a different object.
+\end{formalization}
+
+% Proof environment ours: Gacs derives the theorem in the paragraph above it.
+\begin{proof}
+  \proves{thm:Shannon-coding-lb}
+  \leanok
+  \uses{l:kraft}
+Gibbs' inequality with \( Q(x) = 2^{-\len{z_{x}}} \), which satisfies
+\( \sum_{x} Q(x) \le 1 \) by Kraft's inequality.
+\end{proof}
+
+
+\subsubsection{Entropy as expected complexity}
+Applying Shannon's theorem~\ref{thm:Shannon-coding-lb}
+to the code obtained by taking \( z_{x} \) as the
+shortest self-delimiting description of \( x \), we obtain the inequality
+ \[
+   \sum_{x} P(x)K(x) \ge \cH(P)
+ \]
+On the other hand, since \( \m(x) \) is a universal semimeasure, we have
+\( \m(x) \gem P(x) \): more precisely, \( K(x) \lea -\log P(x) + K(P) \), 
+leading to the following theorem.
+
+% Gacs source line 3831
+ \begin{theorem}
+  \label{thm:g3.1.3}
+  \lean{Kolmogorov.Information.Classical.entropy_expectedComplexity, Kolmogorov.Information.Classical.entropy_le_expectedComplexity, Kolmogorov.Information.Classical.expectedComplexity_le}
+  \leanok
+  \uses{def:g3.1.1, def:K}
+For a computable distribution \( P \) we have
+ \begin{equation}\label{eq:exp-entr-compl}
+   \cH(P) \le \sum_{x} P(x)K(x) \lea \cH(P) + K(P).
+ \end{equation}
+ \end{theorem}
+
+\begin{formalization}
+\( P \) is a computable probability distribution on strings
+(\texttt{Kolmogorov.Randomness.ComputableMeasure}), and \( K(P) \) is the complexity
+\( K(y_{P}) \) of any string \( y_{P} \) that describes \( P \) as a lower semicomputable
+function (\texttt{Kolmogorov.Randomness.IsLSCDescription}). The constant does not depend on
+\( P \).
+\end{formalization}
+
+% Proof environment ours: Gacs gives the argument in the paragraph above the theorem.
+\begin{proof}
+  \proves{thm:g3.1.3}
+  \leanok
+  \uses{thm:Shannon-coding-lb, l:kraft, thm:coding}
+The lower bound is Gibbs' inequality for the lengths \( K(x) \), which satisfy Kraft's
+inequality \( \sum_{x} 2^{-K(x)} \le 1 \). For the upper bound,
+\( 2^{-K(P)} P(x) \lem 2^{-K(x)} \), so \( K(x) \le -\log P(x) + K(P) + c \) whenever
+\( P(x) > 0 \); multiply by \( P(x) \) and sum.
+\end{proof}
+
+\begin{formalization}
+The bound \( 2^{-K(P)} P(x) \lem 2^{-K(x)} \) is a weak form of
+Theorem~\ref{thm:exact-domin} (which has \( \m(P) \gem 2^{-K(P)} \) in place of
+\( 2^{-K(P)} \)). It is proved in the Chapter~2 files, uniformly in the description of
+\( P \), as \texttt{Kolmogorov.Randomness.semimeasure\_le\_exact}.
+\end{formalization}
+
+Note that \( \cH(P) \) is the entropy of the distribution \( P \) while \( K(P) \) is
+just the description complexity of the function \( x \mapsto P(x) \), it has
+nothing to do directly
+with the magnitudes of the values \( P(x) \) for each \( x \) as real numbers.
+These two relations give
+ \[ 
+K(P) \eqa \sum_{x} P(x)K(x) - K(P),
+ \]
+the entropy is within an additive constant equal to the
+\df{expected complexity}.
+Our intended interpretation of \( K(x) \) as information content of the
+individual object \( x \) is thus supported by a tight quantitative
+relationship to Shannon's statistical concept.
+
+
+\subsubsection{Identities, inequalities}
+The statistical entropy obeys meaningful identities which immediately
+follow from the definition of conditional entropy. 
+
+% Gacs source line 3856
+ \begin{definition}
+  \label{def:g3.1.2}
+  \lean{Kolmogorov.Information.Classical.condEntropy}
+  \leanok
+  \uses{def:g3.1.1}
+Let \( X \) and \( Y \) be two discrete random variables with a joint distribution.
+ The \emph{conditional entropy} of \( Y \) with respect to \( X \) is defined as
+ \[
+     \cH(Y \mvert X) =
+   -\sum_{x} P[X=x]\sum_y P[Y=y \mvert X=x]\log P[Y=y \mvert X=x].
+ \]
+The \df{joint entropy} of \( X \) and \( Y \) is defined as the entropy of
+the pair \( (X,Y) \).
+ \end{definition}
+
+\begin{formalization}
+The pair \( (X, Y) \) is given by its joint law \( p \colon \alpha \times \beta \to [0, \infty] \),
+and the laws of \( X \) and \( Y \) are its marginals
+(\texttt{Kolmogorov.Information.Classical.marg1}, \texttt{Kolmogorov.Information.Classical.marg2}).
+The joint entropy is the entropy of \( p \).
+\end{formalization}
+
+The following \df{additivity property} is then verifiable by simple calculation:
+ \begin{equation}\label{eq:entraddit}
+   \cH(X,Y) = \cH(X) + \cH(Y \mvert X).
+ \end{equation}
+  Its meaning is that the amount of information in the pair \( (X,Y) \) is
+equal to the amount of information in \( X \) plus the amount of our
+residual uncertainty about \( Y \) once the value of \( X \) is known.
+
+Though intuitively expected, the following identity needs proof:
+ \begin{align*}
+   \cH(Y\mvert X) \le \cH(Y).
+ \end{align*}
+We will prove it after we define the difference below.
+
+\begin{formalization}
+Additivity \eqref{eq:entraddit} is
+\texttt{Kolmogorov.Information.Classical.entropy\_eq\_add\_condEntropy}, an identity in
+\( [0, \infty] \) with no finiteness hypothesis. The inequality
+\( \cH(Y \mvert X) \le \cH(Y) \) is
+\texttt{Kolmogorov.Information.Classical.condEntropy\_le\_entropy}, proved directly from
+Gibbs' inequality, fibre by fibre.
+\end{formalization}
+
+% Gacs source line 3881
+ \begin{definition}
+  \label{def:g3.1.3}
+  \lean{Kolmogorov.Information.Classical.mutualInfo}
+  \leanok
+  \uses{def:g3.1.1, def:g3.1.2}
+The \df{information} in \( X \) about \( Y \) is defined by
+ \[
+ \cI(X : Y) = \cH(Y) - \cH(Y \mvert X).
+ \]
+\end{definition}
+
+\begin{formalization}
+The difference is taken in \( [0, \infty] \), so it is meaningful when
+\( \cH(Y) < \infty \), the case in which the identities below are stated.
+\end{formalization}
+
+This is the amount by which our knowledge of \( X \) decreases our 
+uncertainty about \( Y \).
+
+The identity below comes from equation~\eqref{eq:entraddit}.
+ \[
+ \cI(X : Y) = \cI(Y : X) = \cH(X) + \cH(Y) - \cH(X,Y)
+ \]
+The meaning of the symmetry relation is 
+that the \emph{quantity} of information in \( Y \) about
+\( X \) is equal to the quantity of information in \( X \) about \( Y \). 
+Despite its simple derivation, this fact is not very intuitive; especially
+since only the quantities are equal, the actual contents are generally
+not (see~\cite{GacsKornComnInf73}). 
+We also call \( \cI(X : Y) \) the \df{mutual information} of \( X \) and \( Y \).
+We can also write
+ \begin{align}\label{eq:info-via-exp-val}
+   \cI(X : Y) = \sum_{x,y}P[X=x,Y=y]\log\frac{P[X=x,Y=y]}{P[X=x]P[Y=y]}.
+ \end{align}
+
+\begin{formalization}
+Formalized when \( \cH(X), \cH(Y) < \infty \): the symmetry
+\texttt{Kolmogorov.Information.Classical.mutualInfo\_swap}, the identity
+\( \cI(X : Y) = \cH(X) + \cH(Y) - \cH(X,Y) \)
+(\texttt{Kolmogorov.Information.Classical.mutualInfo\_eq\_entropy\_add\_sub}), and
+\eqref{eq:info-via-exp-val}
+(\texttt{Kolmogorov.Information.Classical.mutualInfo\_eq\_mutualInfoKL}). The right-hand side
+of \eqref{eq:info-via-exp-val} is written as the sum of the non-negative terms
+\( p_{1}(x) p_{2}(y)\, \phi\bigl(p(x,y)/(p_{1}(x) p_{2}(y))\bigr) / \ln 2 \) with
+\( \phi(t) = t \ln t + 1 - t \) (Mathlib's \texttt{InformationTheory.klFun}), which has the
+same sum (\texttt{Kolmogorov.Information.Classical.mutualInfoKL}).
+\end{formalization}
+
+% Gacs source line 3906
+\begin{proposition}
+  \label{prop:g3.1.4}
+  \lean{Kolmogorov.Information.Classical.mutualInfo_eq_zero_iff}
+  \leanok
+  \uses{def:g3.1.3}
+  The information \( \cI(X:Y) \) is nonnegative and is 0 only if \( X,Y \) are independent.
+\end{proposition}
+
+\begin{formalization}
+Non-negativity is automatic for a value in \( [0, \infty] \). The Lean statement is an
+equivalence, under \( \cH(X), \cH(Y) < \infty \): \( \cI(X : Y) = 0 \) if and only if
+\( p(x,y) = p_{1}(x) p_{2}(y) \) for all \( x, y \).
+\end{formalization}
+
+% Gacs source line 3909
+\begin{proof}
+  \proves{prop:g3.1.4}
+  \leanok
+  \uses{thm:CsiszarConc}
+Apply Theorem~\ref{thm:CsiszarConc} to~\eqref{eq:info-via-exp-val}.
+This is 0 only if \( P[X=x,Y=y]=P[X=x]P[Y=y] \) for all \( x,y \).
+\end{proof}
+
+\begin{formalization}
+The Lean proof uses the non-negative form of \eqref{eq:info-via-exp-val} instead of
+Theorem~\ref{thm:CsiszarConc}: the sum vanishes if and only if every term does, and
+\( \phi(t) = 0 \) only for \( t = 1 \).
+\end{formalization}
+
+
+\subsubsection{The algorithmic addition theorem}
+For the notion of algorithmic entropy \( K(x) \) defined in
+Section~1.6, it is a serious test of fitness to ask whether it
+has an additivity property analogous to the identity~\eqref{eq:entraddit}. 
+Such an identity would express some deeper
+relationship than the trivial identity~\eqref{eq:entraddit} since the
+conditional complexity is defined using the notion of 
+\emph{conditional computation}, and not by an algebraic formula involving
+the unconditional definition.
+
+A literal translation of the identity~\eqref{eq:entraddit} turns out to
+be true for the function \( K(x) \) as well as for Kolmogorov's
+complexity \( C(x) \) with good approximation. 
+But the exact additivity property of algorithmic entropy is subtler. 
+
+% Gacs source line 3930
+\begin{theorem}[Addition]
+  \label{thm:g3.1.4}
+  \lean{Kolmogorov.Information.addition, Kolmogorov.KPPair_chain_upper, Kolmogorov.KPPair_chain_lower}
+  \leanok
+  \uses{def:K, def:pair-complexity}
+We have
+ \begin{equation}\label{eq:Haddit}
+	K(x, y) \eqa K(x) + K(y \mvert x, K(x)).
+ \end{equation}
+ \end{theorem}
+
+\begin{formalization}
+The condition \( x, K(x) \) is the string \texttt{pairCode x (natCode k)} with
+\( k = K(x) \) (\texttt{Kolmogorov.Information.xk}). The two directions are proved upstream, for the
+complexity \( K(x, y) \) of \texttt{Kolmogorov.pairCode x y}
+(\texttt{Kolmogorov.KPPair\_chain\_upper}, \texttt{Kolmogorov.KPPair\_chain\_lower}).
+\texttt{Kolmogorov.Information.addition} restates them with natural-number complexities.
+\end{formalization}
+
+% Gacs source line 3935
+ \begin{proof}
+  \proves{thm:g3.1.4}
+  \leanok
+  \uses{l:projmeas, thm:coding}
+  We first prove \( \lea \).
+Let \( F \) be the following s.d.~interpreter.
+The machine computing \( F(p) \) tries to parse \( p \) into \( p = uv \) so that
+\( T(u) \) is defined, then outputs the pair 
+\( \tup{ T(u), T(v,\ang{ T(u), \len{u} } )} \). 
+If \( u \) is a shortest description of \( x \) and \( v \) a
+shortest description of \( y \) given the pair \( \tup{ x,K(x)} \) then the
+output of \( F \) is the pair \( \tup{ x,y}  \). 
+
+Now we prove \( \gea \). 
+Let \( c \) be a constant (existing in force of 
+Lemma~\ref{l:projmeas}) such that for all \( x \) we have 
+\( \sum_y2^{-K(x,y)} \le 2^{-K(x)+c} \). 
+Let us define the semicomputable function \( f(z,y) \) by 
+ \[	
+  f(\tup{ x,k} ,y) = 2^{k - K(x,y) - c}.
+ \]
+  Then for \( k=K(x) \) we have \( \sum_y f(z,y) \le 1 \), hence the
+generalization~(1.6.13) of the coding theorem implies
+ \(  K(y \mvert x, K(x)) \lea K(x,y) - K(x)  \).
+ \end{proof}
+
+Recall the definition of \( x^{*} \) as the first shortest description of \( x \).
+
+\begin{formalization}
+\( x^{*} \) is \texttt{Kolmogorov.Information.xStar}, \emph{some} shortest description of
+\( x \), chosen without any computability claim. Everything below uses \( x^{*} \) only
+through \( x^{*} \asymp \ang{x, K(x)} \), proved after Definition~\ref{def:g3.1.6}, and that
+holds for every choice.
+\end{formalization}
+
+% Gacs source line 3960
+ \begin{corollary}
+  \label{cor:g3.1.5}
+  \lean{Kolmogorov.Information.Ku_xStar_pair}
+  \leanok
+  \uses{def:K, def:pair-complexity}
+ We have
+ \begin{equation}\label{eq:star-joint}
+  K(x^{*}, y) \eqa K(x, y).
+ \end{equation}
+ \end{corollary}
+
+% Proof environment ours: Gacs states the corollary without proof.
+\begin{proof}
+  \proves{cor:g3.1.5}
+  \leanok
+  \uses{thm:g3.1.4, cor:shortest-descriptions}
+The pair \( \ang{x, y} \) is computable from \( \ang{x^{*}, y} \), since \( x = T(x^{*}) \);
+this gives \( \gea \). Conversely,
+\( K(x^{*}, y) \lea K(x^{*}) + K(y \mvert x^{*}) \) and \( K(x^{*}) \eqa K(x) \), so
+\( K(x^{*}, y) \lea K(x) + K(y \mvert x^{*}) \eqa K(x, y) \) by~\eqref{eq:Haddit.alt} below.
+\end{proof}
+
+The Addition Theorem implies 
+ \[ 	K(x,y) \lea K(x) + K(y \mvert x) \lea K(x) + K(y) 
+ \]
+  while these relations do not hold for Kolmogorov's complexity
+\( C(x) \), as pointed out in the discussion of Theorem~\ref{thm:addit}. 
+For an ordinary interpreter, extra information is needed to separate
+the descriptions of \( x \) and \( y \).  
+The self-delimiting interpreter
+accepts only a description that provides the neccesary information to
+determine its end. 
+
+The term \( K(x) \) cannot be omitted from the condition in \( K(y \mvert x, K(x)) \) 
+in the identity~\eqref{eq:Haddit}. 
+Indeed, it follows from
+equation~(1.7.2) that with \( y=K(x) \), we have \( K(x,y)-K(x) \eqa 0 \).
+But \( K(K(x) \mvert x) \) can be quite large, as shown in the following
+theorem given here without proof.
+
+% Gacs source line 3985
+\begin{theorem}[see~\protect\cite{GacsSymm74}]\label{thm:compl-compl}
+  \lean{Kolmogorov.Information.CompComp.exists_KK_ge}
+  \leanok
+  \uses{def:K}
+ There is a constant \( c \) such that for all \( n \)
+there is a binary string \( x \) of length \( n \) with
+ \[  K(K(x) \mvert x) \ge \log n - \log\log n -c.
+ \]
+ \end{theorem}
+
+\begin{formalization}
+Logarithms are \( \lfloor \log_{2} \cdot \rfloor \) (\texttt{Nat.log 2}), and \( K(x) \) is
+written in the unary code \texttt{Kolmogorov.natCode} inside the complexity. The proof is the
+one of Section~\ref{sec:compl-compl}.
+\end{formalization}
+
+We will prove this theorem in Section~\ref{sec:compl-compl}.
+For the study of information relations, let us introduce yet another
+notation.
+
+% Gacs source line 3995
+ \begin{definition}
+  \label{def:g3.1.6}
+  \lean{Kolmogorov.Information.InfoLE, Kolmogorov.Information.InfoLEMod, Kolmogorov.Information.InfoEquiv}
+  \leanok
+  \uses{def:K}
+For any functions \( f,g,h \) with values in \( \dS \), let
+ \[  f \preceq g \bmod h
+ \]
+  mean that there is a constant \( c \) such that \( K(f(x) \mvert g(x),h(x))
+\le c \) for all \( x \).
+We will omit \( \bmod h \) if \( h \) is not in the condition.
+The sign \( \asymp \) will mean inequality in both directions.
+ \end{definition}
+
+\begin{formalization}
+The functions are defined on an arbitrary index type. That \( f \asymp g \) allows replacing
+\( f \) by \( g \) inside a complexity, as condition or as object, is
+\texttt{Kolmogorov.Information.InfoEquiv.cond} and \texttt{Kolmogorov.Information.InfoEquiv.obj}.
+\end{formalization}
+
+The meaning of \( x \asymp y \) is that the objects \( x \) and \( y \) hold
+essentially the same information. 
+Theorem~\ref{thm:rectransf}
+implies that if \( f\asymp g \) then we can replace \( f \) by \( g \) wherever
+it occurs as an argument of the functions \( H \) or \( K \).  
+As an illustration of this definition, let us prove the relation
+ \[ 	x^{*} \asymp \ang{ x, K(x) } 
+ \]
+  which implies \( K(y \mvert x, K(x)) \eqa K(y \mvert x^{*}) \), and hence 
+ \begin{equation} 	K(x,y) - K(x) \eqa K(y \mvert x^{*}).
+\label{eq:Haddit.alt} 
+ \end{equation}
+  The direction \( \preceq \) holds because we can compute \( x=T(x^{*}) \)
+and \( K(x)=\len{x^{*}} \) from \( x^{*} \). 
+On the other hand, if we have \( x \)
+and \( K(x) \) then we can enumerate the set \( E(x) \) of all shortest
+descriptions of \( x \). 
+By the corollary of Theorem~\ref{thm:Hstat}, the
+number of elements of this set is bounded by a constant. 
+The estimate~(1.6.4) implies \( K(x^{*} \mvert x,K(x)) \eqa 0 \).
+
+\begin{formalization}
+\( x^{*} \asymp \ang{x, K(x)} \) is \texttt{Kolmogorov.Information.xStar\_equiv}, and
+\eqref{eq:Haddit.alt} is \texttt{Kolmogorov.Information.addition\_star}. The bound
+\( K(x^{*} \mvert x, K(x)) \eqa 0 \) is obtained from
+Corollary~\ref{cor:shortest-descriptions} through the conditional coding theorem
+(\texttt{Kolmogorov.Information.condCoding\_trim}), applied to the uniform distribution on the
+shortest descriptions of \( x \).
+\end{formalization}
+
+Though the string \( x^{*} \) and the pair \( \tup{ x, K(x) } \) contain the
+same information, they are not equivalent under some stronger
+criteria on the decoder. 
+To obtain \( x \) from the shortest description
+may take extremely long time. 
+But even if this time \( t \) is
+acceptable, to find any description of length \( K(x) \) for \( x \) might
+require about \( t2^{K(x)} \) steps of search. 
+
+The Addition Theorem can be made formally analogous to its 
+information-theoretic couterpart using Chaitin's notational trick. 
+
+% Gacs source line 4038
+ \begin{definition}
+  \label{def:g3.1.7}
+  \lean{Kolmogorov.Information.Kstar}
+  \leanok
+  \uses{def:K}
+Let \( K^{*}(y \mvert x) = K(y \mvert x^{*}) \).
+ \end{definition}
+
+Of course, \( K^{*}(x) = K(x) \).
+Now we can formulate the relation~\eqref{eq:Haddit.alt} as
+ \[	K^{*}(x, y) \eqa K^{*}(x) + K^{*}(y \mvert x).
+ \]
+  However, we prefer to use the function \( K(y \mvert x) \) since the
+function \( K^{*}(y \mvert x) \) is not semicomputable.
+Indeed, if there was
+a function \( h(x,y) \) upper semicomputable in \( \ang{ x,y} \) such that
+\( K(x,y) - K(x) \eqa h(x,y) \) then by the argument of the proof of the
+Addition Theorem, we would have \( K(y \mvert x) \lea h(x,y) \) which is not
+true, according to remark after the proof of the Addition Theorem.
+
+\begin{formalization}
+The identity \( K^{*}(x, y) \eqa K^{*}(x) + K^{*}(y \mvert x) \) is
+\texttt{Kolmogorov.Information.Kstar\_addition}. The claim that \( K^{*} \) is not
+semicomputable is not formalized.
+\end{formalization}
+
+% Gacs source line 4054
+\begin{definition}
+  \label{def:g3.1.8}
+  \lean{Kolmogorov.Information.Info}
+  \leanok
+  \uses{def:K}
+We define the algorithmic mutual information with the same formula as classical
+information:
+ \[
+   I(x : y) = K(y) - K(y \mvert x).
+ \]
+\end{definition}
+
+Since the quantity \(  I(x : y) \) is not quite equal to
+\( K(x) - K(x \mvert y) \) (in fact, Levin showed (see~\cite{GacsSymm74}) that
+they are not even asymptotically equal), we prefer to define information also by a
+symmetrical formula.
+
+% Gacs source line 4067
+ \begin{definition}\label{def:I*}
+  \lean{Kolmogorov.Information.InfoStar}
+  \leanok
+  \uses{def:K, def:pair-complexity}
+The mutual information of two objects \( x \) and \( y \) is
+ \[
+	I^{*}(x : y) = K(x) + K(y) - K(x, y).
+ \]
+ \end{definition}
+
+\begin{formalization}
+Both informations are integer valued.
+\end{formalization}
+
+The Addition Theorem implies the identity
+ \[
+ 	I^{*}(x : y) \eqa I(x^{*} : y) \eqa I(y^{*} : x).
+ \]
+
+\begin{formalization}
+\texttt{Kolmogorov.Information.infoStar\_eq\_info\_xStar} and
+\texttt{Kolmogorov.Information.infoStar\_eq\_info\_yStar}.
+\end{formalization}
+
+Let us show that classical information is indeed the expected value of
+algorithmic information, for a computable probability distribution \( p \):
+
+% Gacs source line 4081
+\begin{lemma}
+  \label{lem:g3.1.10}
+  \lean{Kolmogorov.Information.expected_infoStar}
+  \leanok
+  \uses{def:g3.1.3, def:I*}
+Given a computable joint probability mass distribution \( p(x,y) \) over \( (x,y) \)
+we have 
+\begin{align}\label{eq:eqamipmi}
+\cI(X : Y) - K(p) & \lea  \sum_{x} \sum_y p(x,y) I^{*}(x : y) 
+\\& \lea \cI(X : Y) + 2 K(p) , 
+\nonumber
+\end{align}
+where \( K(p) \) is the length of the shortest prefix-free program that computes
+\( p(x,y) \) from input \( (x,y) \).
+\end{lemma}
+
+\begin{formalization}
+\( p \) is a probability distribution on pairs of strings, and \( K(p) \) is the complexity
+\( K(y_{p}) \) of any string \( y_{p} \) describing \( \ang{x, y} \mapsto p(x, y) \) as a lower
+semicomputable function (\texttt{Kolmogorov.Randomness.IsLSCDescription}). \( \cI(X : Y) \)
+is the non-negative form \eqref{eq:info-via-exp-val}
+(\texttt{Kolmogorov.Information.Classical.mutualInfoKL}). Both inequalities are stated
+without subtraction, in \( [0, \infty] \), with
+\( \sum p\, I^{*} = \sum p(x,y) K(x) + \sum p(x,y) K(y) - \sum p(x,y) K(x,y) \) rearranged,
+so no finiteness hypothesis is needed.
+\end{formalization}
+
+% Gacs source line 4092
+\begin{proof}
+  \proves{lem:g3.1.10}
+  \leanok
+  \uses{thm:g3.1.3}
+We have
+\begin{align*}
+\sum_{x,y} p(x,y) I^{*}(x : y) &\eqa 
+\sum_{x,y} p(x, y)  [K(x) + K(y) - K(x, y)].
+\end{align*}
+ Define \( \sum_y p(x,y) = p_{1}(x) \) and \( \sum_{x} p(x,y) = p_{2}(y) \)
+to obtain
+\begin{align*}
+\sum_{x,y} p(x,y) I(x:y) &\eqa
+ \sum_{x} p_{1} (x) K(x) + \sum_y p_{2} (y) K(y) - \sum_{x,y} p(x,y) K(x, y).
+\end{align*}
+The distributions \( p_{i} \) (\( i=1,2 \)) are computable.
+We have seen in~\eqref{eq:exp-entr-compl} that
+\( \cH(q) \lea \sum_{x} q(x) K(x) \lea \cH(q) + K(q) \).
+
+Hence, \( \cH(p_{i}) \lea \sum_{x} p_{i} (x) K(x) \lea \cH(p_{i}) + K(p_{i}) \).
+(\( i=1,2 \)), and \( \cH(p) \lea \sum_{x,y} p(x,y) K(x,y) \lea \cH(p) + K(p) \).
+On the other hand, the probabilistic mutual information
+is expressed in the entropies by \( \cI(X : Y) = \cH(p_{1}) + \cH(p_{2}) - \cH(p) \).
+By construction of the \( q_{i} \)'s above,
+we have \( K(p_{1}), K(p_{2}) \lea K(p) \). 
+Since the complexities are positive, substitution establishes the lemma.
+\end{proof}
+
+\begin{formalization}
+The Lean proof avoids descriptions of the marginals and the bounds
+\( K(p_{1}), K(p_{2}) \lea K(p) \). The joint law and its two marginals form jointly lower
+semicomputable families indexed by the description \( y_{p} \), so indexed domination
+(\texttt{Kolmogorov.Randomness.indexed\_domination\_trim}) gives
+\( 2^{-K(y_{p})} p_{i}(x) \lem 2^{-K(x)} \) directly. The expected complexity bounds then
+follow as in Theorem~\ref{thm:g3.1.3}.
+\end{formalization}
+
+% Gacs source line 4117
+ \begin{remark}\label{rem:inf-def-rand}
+The information \( I^{*}(x : y) \) can be written as
+ \[
+   I^{*}(x : y) \eqa \log \frac{\m(x, y)}{\m(x)\m(y)}.
+ \]
+Formally, \( I^{*}(x : y) \) looks like 
+\( \ol\d_{\m\times\m}((x, y) \mvert \m \times \m) \) with the function 
+\( \ol\d_{\cdot}(\cdot) \) introduced in~\eqref{eq:d_c}.
+Thus, it looks like \( I^{*}(x : y) \) measures the deficiency of randomness
+with respect to the distribution \( \m \times \m \).
+The latter distribution expresses our ``hypothesis'' that \( x,y \) are
+``independent'' from each other.
+There is a serious technical problem with this interpretation: the function
+\( \ol\d_{P}(x) \) was only defined for computable measures \( P \).
+Though the definition can be extended, it is not clear at all that the
+expression \( \ol\d_{P}(x) \) will also play the role of universal test
+for arbitrary non-computable distributions.
+Levin's theory culminating in~\cite{LevinRandCons84} develops this idea,
+and we return to it in later parts of these notes.
+ \end{remark}
+
+\begin{formalization}
+The displayed identity is formalized multiplicatively, for any universal semimeasure
+\( \m \): \( 2^{-c} \m(x, y) \le 2^{I^{*}(x : y)} \m(x) \m(y) \le 2^{c} \m(x, y) \)
+(\texttt{Kolmogorov.Information.infoStar\_eq\_log\_ratio}). The interpretation as a
+deficiency of randomness is not formalized.
+\end{formalization}
+
+Let us examine the size of the
+defects of naive additivity and information symmetry.
+
+% Gacs source line 4149
+ \begin{corollary}
+  \label{cor:g3.1.12}
+  \lean{Kolmogorov.Information.additivity_defect, Kolmogorov.Information.additivity_defect_le, Kolmogorov.Information.info_asymmetry}
+  \leanok
+  \uses{def:g3.1.8}
+For the defect of additivity, we have
+ \begin{equation}
+  K(x) + K(y \mvert x) - K(x, y) \eqa I(K(x) : y \mvert x)
+ \lea K(K(x) \mvert x).
+  \end{equation}
+For information asymmetry, we have
+ \begin{equation}
+ I(x : y) - I(y : x) \eqa I(K(y) : x \mvert y) - I(K(x) : y \mvert x).
+ \end{equation}
+ \end{corollary}
+
+\begin{formalization}
+The conditional information is
+\( I(u : v \mvert w) = K(v \mvert w) - K(v \mvert w, u) \)
+(\texttt{Kolmogorov.Information.CondInfo}).
+\end{formalization}
+
+% Gacs source line 4159
+ \begin{proof}
+  \proves{cor:g3.1.12}
+  \leanok
+  \uses{thm:g3.1.4}
+Immediate from the addition theorem.
+ \end{proof}
+
+% Gacs source line 4163
+ \begin{theorem}[Levin]
+  \label{thm:g3.1.6}
+  \lean{Kolmogorov.Information.levin_asymmetry, Kolmogorov.Information.asym_gap}
+  \leanok
+  \uses{def:g3.1.8}
+The information \( I(x : y) \) is not even asymptotically symmetric.
+ \end{theorem}
+
+\begin{formalization}
+Made precise as: there is a \( c \) such that for every \( n \) some \( x \) of length \( n \)
+has, for one of the pairs \( (u, v) = (x, K(x)) \) or \( (x^{*}, K(x)) \),
+\( 2\,|I(u : v) - I(v : u)| \ge \log n - \log\log n - c \).
+\end{formalization}
+
+% Gacs source line 4166
+ \begin{proof}
+  \proves{thm:g3.1.6}
+  \leanok
+  \uses{thm:compl-compl, thm:g3.1.4}
+For some constant \( c \), assume
+\( |x| = n \) and \( K(K(x) \mvert x) \ge \log n - \log\log n - c \).
+Consider \( x, x^{*} \) and \( K(x) \).
+Then we can check immediately the relations
+ \[
+  I(x : K(x)) \lea 3 \log \log n 
+              < \log n - \log\log n - c \lea I(x^{*} : K(x)).
+ \]
+and
+ \[
+    I(K(x) : x) \eqa I(K(x) : x^{*}).
+ \]
+It follows that symmetry breaks down in an exponentially great measure
+either on the pair \( (x, K(x)) \) or the pair \( (x^{*}, K(x)) \).
+ \end{proof}
+
+\begin{formalization}
+The Lean proof does not bound \( I(x : K(x)) \) by \( 3 \log\log n \); it compares the two
+asymmetries directly. Since \( K(K(x) \mvert x^{*}) \eqa 0 \) and
+\( I(K(x) : x) \eqa I(K(x) : x^{*}) \), the asymmetry of \( (x^{*}, K(x)) \) minus that of
+\( (x, K(x)) \) is \( \gea K(K(x) \mvert x) \ge \log n - \log\log n - c \)
+(\texttt{Kolmogorov.Information.asym\_gap}), so one of the two is at least half of that.
+\end{formalization}
+
+
+\subsubsection{Data processing}
+The following useful identity is also classical, and is called the
+\df{data processing identity}:
+ \begin{equation}\label{eq:data-proc-ident}
+   \cI(Z : (X, Y)) = \cI(Z : X) + \cI(Z : Y \mvert X).
+ \end{equation}
+Let us see what corresponds to this for algorithmic information.
+
+\begin{formalization}
+The classical identity \eqref{eq:data-proc-ident} is
+\texttt{Kolmogorov.Information.Classical.mutualInfo\_chain}, for a joint law of three
+variables with \( \cH(X), \cH(Y) < \infty \), the conditional information being
+\texttt{Kolmogorov.Information.Classical.condMutualInfo}.
+\end{formalization}
+
+Here is the correct conditional version of the addition theorem:
+% Gacs source line 4193
+ \begin{theorem}
+  \label{thm:g3.1.7}
+  \lean{Kolmogorov.Information.condAddition, Kolmogorov.KPCondPair_chain_upper, Kolmogorov.KPCondPair_chain_lower}
+  \leanok
+  \uses{def:K, def:pair-complexity}
+We have
+ \begin{equation}\label{eq:cond-addit}
+  K(x, y \mvert z) \eqa K(x \mvert z) + K(y \mvert x, K(x \mvert z), z).
+ \end{equation}
+ \end{theorem}
+
+\begin{formalization}
+The condition of the last term is the string \( \ang{z, x, K(x \mvert z)} \)
+(\texttt{Kolmogorov.Information.condCtx}); the order of the components changes complexities
+only by \( O(1) \). The two directions are proved upstream
+(\texttt{Kolmogorov.KPCondPair\_chain\_upper}, \texttt{Kolmogorov.KPCondPair\_chain\_lower}).
+\end{formalization}
+
+% Gacs source line 4199
+ \begin{proof}
+  \proves{thm:g3.1.7}
+  \leanok
+  \uses{l:projmeas, thm:coding}
+The same as for the unconditional version.
+ \end{proof}
+
+% Gacs source line 4203
+ \begin{remark}
+  \label{rem:g3.1.13}
+The reader may have guessed the inequality
+ \[
+  K(x, y \mvert z) \eqa K(x \mvert z) + K(y \mvert x, K(x), z),
+ \]
+but it is incorrect: taking \( z = x \), \( y = K(x) \),
+the left-hand side equals \( K(x^{*} \mvert x) \), and the right-hand side
+equals \( K(x \mvert x) + K(K(x) \mvert x^{*}, x) \eqa 0 \).
+ \end{remark}
+
+\begin{formalization}
+Not formalized.
+\end{formalization}
+
+The following inequality is a useful tool.
+It shows that conditional complexity is a kind of one-sided distance, and
+it is the algorithmic analogue of the well-known (and not difficult
+classical inequality)
+ \[
+   \cH(X \mvert Y) \le \cH(Z \mvert Y) + \cH(X \mvert Z).
+ \]
+
+\begin{formalization}
+The classical inequality is
+\texttt{Kolmogorov.Information.Classical.condEntropy\_triangle}, in \( [0, \infty] \).
+\end{formalization}
+
+% Gacs source line 4221
+ \begin{theorem}[Simple triangle inequality]\label{thm:simple-triangle}
+  \lean{Kolmogorov.Information.simple_triangle}
+  \leanok
+  \uses{def:K, def:pair-complexity}
+We have
+ \begin{equation}\label{eq:simple-triangle}
+  K(z \mvert x) \lea K(y, z \mvert x) \lea K(y \mvert x) + K(z \mvert y).
+ \end{equation}
+ \end{theorem}
+
+% Gacs source line 4227
+ \begin{proof}
+  \proves{thm:simple-triangle}
+  \leanok
+  \uses{thm:g3.1.7}
+  According to~\eqref{eq:cond-addit}, we have
+\[
+  K(y, z \mvert x) \eqa K(y \mvert x) + K(z \mvert y, K(y \mvert x), x).
+\]
+The left-hand side is \( \gea K(z \mvert x) \), the second term of the
+right-hand side is \( \lea K(z \mvert y) \).
+ \end{proof}
+
+Equation~\eqref{eq:cond-addit} justifies the following.
+% Gacs source line 4237
+ \begin{definition}
+  \label{def:g3.1.14}
+  \lean{Kolmogorov.Information.CondInfoStar}
+  \leanok
+  \uses{def:K, def:pair-complexity}
+ \begin{equation}\label{eq:cond-inf}
+ I^{*}(x : y \mvert z) = K(x \mvert z) + K(y \mvert z) - K(x, y \mvert z).
+ \end{equation}
+ \end{definition}
+
+Then we have
+ \begin{align*}
+    I^{*}(x : y \mvert z) &\eqa K(y \mvert z) - K(y \mvert x, K(x \mvert z), z)
+\\                      &\eqa K(x \mvert z) - K(x \mvert y, K(y \mvert z), z).
+ \end{align*}
+
+\begin{formalization}
+\texttt{Kolmogorov.Information.condInfoStar\_eq\_left} and
+\texttt{Kolmogorov.Information.condInfoStar\_eq\_right}, from Theorem~\ref{thm:g3.1.7}.
+\end{formalization}
+
+% Gacs source line 4249
+ \begin{theorem}[Algorithmic data processing identity]
+  \label{thm:g3.1.9}
+  \lean{Kolmogorov.Information.data_processing}
+  \leanok
+  \uses{def:I*, def:g3.1.14}
+ We have
+ \begin{equation}\label{eq:alg-data-proc-ident}
+   I^{*}(z : (x, y)) \eqa I^{*}(z : x) + I^{*}(z : y \mvert x^{*}).
+ \end{equation}
+ \end{theorem}
+
+% Gacs source line 4255
+ \begin{proof}
+  \proves{thm:g3.1.9}
+  \leanok
+  \uses{thm:g3.1.4}
+We have
+ \begin{align*}
+    I^{*}(z : (x, y)) &\eqa K(x, y) + K(z) - K(x, y, z)
+\\  I^{*}(z : x)      &\eqa K(x)    + K(z) - K(x, z)
+\\ I^{*}(z : (x, y)) - I^{*}(z : x) 
+            &\eqa K(x, y) + K(x, z) - K(x, y, z) - K(x)
+\\          &\eqa K(y \mvert x^{*}) + K(z \mvert x^{*}) - K(y, z \mvert x^{*})
+\\          &\eqa I^{*}(z : y \mvert x^{*}),
+ \end{align*}
+where we used additivity and the definition~\eqref{eq:cond-inf} repeatedly.
+ \end{proof}
+
+\begin{formalization}
+The additivity used is \eqref{eq:Haddit.alt}, three times; the Lean proof needs no
+conditional addition.
+\end{formalization}
+
+% Gacs source line 4267
+ \begin{corollary}
+  \label{cor:g3.1.15}
+  \lean{Kolmogorov.Information.infoStar_mono}
+  \leanok
+  \uses{def:I*}
+The information \( I^{*} \) is monotonic:
+ \begin{equation}\label{eq:inf-mon}
+   I^{*}(x : (y, z)) \gea I^{*}(x : y).
+ \end{equation}
+  \end{corollary}
+
+% Proof environment ours: Gacs states the corollary without proof.
+\begin{proof}
+  \proves{cor:g3.1.15}
+  \leanok
+  \uses{thm:g3.1.9}
+By Theorem~\ref{thm:g3.1.9}, \( I^{*}(x : (y, z)) \eqa I^{*}(x : y) + I^{*}(x : z \mvert y^{*}) \),
+and \( I^{*}(x : z \mvert y^{*}) \gea 0 \) because
+\( K(x, z \mvert y^{*}) \lea K(x \mvert y^{*}) + K(z \mvert y^{*}) \).
+\end{proof}
+
+The following theorem is also sometimes useful.
+
+% Gacs source line 4276
+ \begin{theorem}[Starry triangle inequality]\label{lem:triangle}
+  \lean{Kolmogorov.Information.starry_triangle}
+  \leanok
+  \uses{def:K, def:pair-complexity}
+For all \( x,y,z \), we have
+ \begin{equation}\label{eq:starry-triangle}
+  K(x \mvert y^*) \lea K(x, z \mvert y^{*})
+                \lea K(z \mvert y^*) + K(x \mvert z^*).
+ \end{equation}
+ \end{theorem}
+
+% Gacs source line 4283
+ \begin{proof}
+  \proves{lem:triangle}
+  \leanok
+  \uses{thm:g3.1.9, thm:g3.1.4}
+Using the algorithmic data-processing
+identity~\eqref{eq:alg-data-proc-ident} and the definitions, we have
+ \begin{align*}
+ K(z) & - K(z \mvert y^{*}) + 
+ K(x \mvert z^{*}) - K(x \mvert y, K(y \mvert z^{*}), z^{*})  
+\\ &\eqa I^{*}(y : z) + I^{*}(y : x \mvert z^{*}) \eqa I^{*}(y : (x, z)) 
+\\ &\eqa K(x, z) - K(x, z \mvert y^{*}),
+ \end{align*}
+which gives, after cancelling \( K(z) + K(x \mvert z^{*}) \) on the
+left-hand side with \( K(x, z) \) on the right-hand side, to which it is equal
+according to additivity, and changing sign:
+ \[
+  K(x, z \mvert y^{*}) \eqa
+  K(z \mvert y^{*}) + K(x \mvert y, K(y \mvert z^{*}), z^{*}).
+ \]
+From here, we proceed as in the proof of the simple triangle
+inequality~\eqref{eq:simple-triangle}
+\end{proof}
+
+
+\subsection{Information non-increase}
+
+In this subsection, we somewhat follow the exposition  
+of~\cite{GacsTrompVitAlgorStat00}.
+
+The classical data processing identity has a simple but important
+application.
+Suppose that the random variables \( Z, X, Y \) form a Markov chain in this
+order.
+Then \( I(Z : Y \mvert X) = 0 \) and hence \( I(Z : (X, Y)) = I(Z : X) \).
+In words: all information in \( Z \) about \( Y \) is coming through \( X \): a Markov
+transition from \( X \) to \( Y \) cannot increase the information about \( Z \).
+Let us try to find the algorithmic counterpart of this theorem.
+
+Here, we rigorously show that this is the case in the algorithmic statistics
+setting:
+the information in one object about another
+cannot be increased by any deterministic algorithmic method
+by more than a constant. 
+With added randomization this holds with overwhelming probability.
+For more elaborate versions see~\cite{Levin74,LevinRandCons84}.
+
+Suppose we want to obtain information about a certain object \( x \). 
+It does not seem to be a good policy to guess blindly. 
+This is confirmed by the following inequality.
+ \begin{equation}\label{eq:info-guess}
+	\sum_y \m(y)2^{I(x : y)} \lem 1 
+ \end{equation}
+  which says that for each \( x \), the expected value of \( 2^{I(x : y)} \) is 
+small, even with respect to the universal constructive semimeasure 
+\( \m(y) \). 
+The proof is immediate if we recognize that by the Coding 
+Theorem, 
+ \[	2^{I(x : y)} \eqm \frac{2^{-K(y \mvert x)}}{\m(y)}
+ \]
+  and use the estimate~\eqref{eq:condHsum}.
+
+\begin{formalization}
+\eqref{eq:info-guess} is \texttt{Kolmogorov.Information.info\_guess}, for any universal
+semimeasure \( \m \). With \( 2^{-K(y)} \) in place of \( \m(y) \) the sum equals
+\( \sum_{y} 2^{-K(y \mvert x)} \le 1 \) exactly
+(\texttt{Kolmogorov.Information.info\_guess\_weight}).
+\end{formalization}
+
+We prove a strong version of the information non-increase law
+under deterministic processing (later we need the attached corollary):
+
+% Gacs source line 4344
+\begin{theorem}
+  \label{thm:g3.1.11}
+  \lean{Kolmogorov.Information.info_nonincrease_det}
+  \leanok
+  \uses{def:I*}
+Given \( x \) and \( z \), let \( q \) be a program computing \( z \) from \( x^{*} \).
+Then we have
+ \begin{equation*}
+   I^{*}(y : z) \lea I^{*}(y : x) + K(q).
+ \end{equation*}
+\end{theorem}
+
+\begin{formalization}
+Programs are those of an arbitrary fixed partial recursive programming system
+\( \Phi(q, x^{*}) = z \), and the constant depends only on \( \Phi \).
+\end{formalization}
+
+% Gacs source line 4351
+\begin{proof}
+  \proves{thm:g3.1.11}
+  \leanok
+  \uses{cor:g3.1.15, thm:g3.1.9}
+By monotonicity~\eqref{eq:inf-mon} and
+the data processing identity~\eqref{eq:alg-data-proc-ident}:
+\[
+ I^{*}(y : z) \lea
+I^{*}(y : (x, z)) \eqa I^{*}(y : x) + I^{*}(y : z \mvert x^{*}).   
+\]
+By definition of information and the definition of \( q \):
+ \[
+   I^{*}(y : z \mvert x^{*}) \lea K(z \mvert x^{*}) \lea K(q).
+ \]
+\end{proof}
+
+Randomized computation can increase information only with negligible
+probability.
+Suppose that \( z \) is obtained from \( x \) by some randomized computation.
+The probability \( p(z \mvert x) \) of obtaining \( z \) from \( x \) is a semicomputable
+distribution over the \( z \)'s.
+The information increase \( I^{*}(z : y) - I^{*}(x : y) \) satisfies the
+theorem below. 
+
+% Gacs source line 4372
+ \begin{theorem}
+  \label{thm:g3.1.12}
+  \lean{Kolmogorov.Information.info_nonincrease_rand_mul, Kolmogorov.Information.info_nonincrease_rand}
+  \leanok
+  \uses{def:I*, def:m}
+For all \( x, y, z \) we have
+ \[
+  \m(z \mvert x^{*}) 2^{I^{*}(z : y) - I^{*}(x : y)}
+  \lem \m(z \mvert x^{*}, y, K(y \mvert x^{*})).
+ \]
+Therefore it is upperbounded by \( \m(z \mvert x) \lem \m(z \mvert x^{*}) \).
+ \end{theorem}
+
+\begin{formalization}
+The conditional universal semimeasure is taken in its coding form
+\( \m(z \mvert w) = 2^{-K(z \mvert w)} \), equal to it within a constant factor by the
+conditional coding theorem; the condition \( x^{*}, y, K(y \mvert x^{*}) \) is the string
+\( \ang{x^{*}, y, K(y \mvert x^{*})} \). The additive form,
+\( I^{*}(z : y) - I^{*}(x : y) \lea K(z \mvert x^{*}) - K(z \mvert x^{*}, y, K(y \mvert x^{*})) \),
+is \texttt{Kolmogorov.Information.info\_nonincrease\_rand}. The sentence after the display is
+not formalized.
+\end{formalization}
+
+% Gacs source line 4380
+\begin{remark}
+  \label{rem:g3.1.16}
+The theorem implies
+ \begin{equation}\label{eq:inf-incre-exp}
+   \sum_{z} \m(z \mvert x^{*}) 2^{I^{*}(z : y) - I^{*}(x : y)} \lem 1.
+ \end{equation}
+This says that
+the \( \m(\cdot \mvert x^{*}) \)-expectation of the exponential of the increase
+is bounded by a constant.
+It follows that for example, 
+the probability of an increase of mutual information
+by the amount \( d \) is \( \lem 2^{-d} \).
+\end{remark}
+
+\begin{formalization}
+With \( \m(z \mvert x^{*}) = 2^{-K(z \mvert x^{*})} \): \eqref{eq:inf-incre-exp} is
+\texttt{Kolmogorov.Information.info\_increase\_expectation}, and the bound \( \lem 2^{-d} \)
+on the weight of the \( z \) that increase the information by at least \( d \) is
+\texttt{Kolmogorov.Information.info\_increase\_tail}.
+\end{formalization}
+
+% Gacs source line 4393
+ \begin{proof}[Proof of Theorem~\protect\ref{thm:g3.1.12}]
+  \proves{thm:g3.1.12}
+  \leanok
+  \uses{thm:g3.1.9, cor:g3.1.15}
+We have, by the data processing inequality:
+ \[
+ I^{*}(y : (x, z)) - I^{*}(y : x) 
+   \eqa I^{*}(y : z \mvert x^{*}) 
+   \eqa K(z \mvert x^{*}) - K(z \mvert y, K(y \mvert x^{*}), x^{*}).
+ \]
+Hence, using also \( I^{*}(y: (x, z)) \gea I^{*}(y : z) \) by monotonicity:
+ \[
+ I^{*}(y : z) - I^{*}(y : x) - K(z \mvert x^{*}) 
+   \lea - K(z \mvert y, K(y \mvert x^{*}), x^{*}).
+ \]
+Putting both sides into the exponent gives the statement of the theorem.
+ \end{proof}
+
+% Gacs source line 4408
+\begin{remark}
+  \label{rem:g3.1.17}
+The theorem on information non-increase and its proof look similar to
+the theorems on randomness conservation.
+There is a formal connection, via the observation made in
+Remark~\ref{rem:inf-def-rand}.
+Due to the difficulties mentioned there, we will explore the connection
+only later in our notes.
+\end{remark}
+
+
+\section{The complexity of decidable and enumerable sets}\label{sec:halting}
+
+If \( \og = \og(1)\og(2)\dotsb \) is an infinite binary sequence, then we may
+be interested in how the complexity of the initial segments
+ \[
+  \og(\frto{1}{n}) = \og(1) \dotsb \og(n)
+ \]
+grows with \( n \).
+We would guess that if \( \og \) is ``random'' then \( C(\og(\frto{1}{n})) \) is
+approximately \( n \); this question will be studied satisfactorily in later
+sections.
+Here, we want to look at some other questions.
+
+Can we determine whether the sequence \( \og \) is computable, by just looking
+at the complexity of its initial segments?
+It is easy to see that if \( \og \) is computable then 
+\( C(\og(\frto{1}{n})) \lea \log n \).
+But of course, if \( C(\og(\frto{1}{n})) \lea \log n \) then it is not necessarily true
+yet that \( \og \) is computable.
+Maybe, we should put \( n \) into the condition.
+If \( \og \) is computable then \( C(\og(\frto{1}{n}) \mvert n) \lea 0 \).
+Is it true that \( C(\og(\frto{1}{n}) \mvert n) \lea 0 \) for all \( n \) then indeed
+\( \og \) is computable?
+Yes, but the proof is quite difficult (see either its original, attributed
+to Albert Meyer in~\cite{Loveland69}, or in~\cite{ZvLe70}).
+The suspicion arises that when
+measuring the complexity of starting segments of infinite sequences,
+neither Kolmogorov complexity nor its prefix version are the most natural
+choice.
+Other examples will support the suspicion, so let us introduce, following
+Loveland's paper~\cite{Loveland69}, the following variant. 
+
+% Gacs source line 4454
+ \begin{definition}
+  \label{def:g3.2.1}
+  \lean{Kolmogorov.Information.Halting.DecMap, Kolmogorov.Information.Halting.Decides, Kolmogorov.Information.Halting.decK}
+  \leanok
+Let us say that a program \( p \) \df{decides} a string \( x = (x(1),x(2),\dotsc) \)
+on a Turing machine \( T \) up to \( n \) if for all \( i \in \{1,\dots,n\} \) we have
+ \[
+   T(p,i) = x(i).
+ \]
+Let us further define the \df{decision complexity}
+ \[
+   C_{T}(x; n) = \min\setof{\len{p} : p \txt{ decides \( x \) on \( T \) up to \( n \)}}.
+ \]
+ \end{definition}
+
+\begin{formalization}
+A machine is a partial recursive map \( T \colon \dS \times \dN \to \{0, 1\} \), and positions are
+counted from \( 0 \). The decision complexity is defined for \( n = \len{x} \) only:
+\texttt{decK T x} is \( C_{T}(x; \len{x}) \), which is how the notation is used below.
+\end{formalization}
+
+As for the Kolmogorov complexity, an invariance theorem holds, and there is
+an optimal machine \( T_{0} \) for this complexity.
+Again, we omit the index \( T \), assuming that such an optimal machine has
+been fixed.
+
+The differences between \( C(x) \), \( C(x \mvert n) \) and \( C(x ; n) \) are
+interesting to explore; intuitively, the important difference is that the
+program achieving the decision complexity of \( x \) does not have to offer
+precise information about the length of \( x \).
+We clearly have
+ \[
+   C(x \mvert n) \lea C(x ; n) \lea C(x).
+ \]
+Examples that each of these inequalities can be strict, are left to
+exercises.
+
+\begin{formalization}
+Optimality is \texttt{Kolmogorov.Information.Halting.IsOptimalDecision}, and the invariance
+theorem is \texttt{Kolmogorov.Information.Halting.univDec\_isOptimal}: the universal
+decompressor, run on condition \( i \), with its first output bit kept, is an optimal decision
+machine. The two inequalities are
+\texttt{Kolmogorov.Information.Halting.condK\_le\_decK} (with \( n = \len{x} \) given in
+unary) and \texttt{Kolmogorov.Information.Halting.decK\_le\_plainK}.
+\end{formalization}
+
+% Gacs source line 4483
+ \begin{remark}
+  \label{rem:g3.2.2}
+If \( \og(\frto{1}{n}) \) is a segment of an infinite sequence \( \og \) then we can write
+ \[
+   C(\og ; n)
+ \]
+instead of \( C(\og(\frto{1}{n}) ; n) \) without confusion, since there is only one way
+to understand this expression.
+ \end{remark}
+
+\begin{formalization}
+An infinite sequence is a map \( \og \colon \dN \to \{0, 1\} \), and \( \og(\frto{1}{n}) \) is
+\texttt{Kolmogorov.Information.Halting.seqPrefix}.
+\end{formalization}
+
+Decision complexity offers an easy characterization of decidable infinite
+sequences.
+
+% Gacs source line 4495
+ \begin{theorem}
+  \label{thm:g3.2.1}
+  \lean{Kolmogorov.Information.Halting.computable_iff_decK_bounded}
+  \leanok
+  \uses{def:g3.2.1}
+Let \( \og = (\og(1), \og(2),\dotsc) \) be an infinite sequence.
+Then \( \og \) is decidable if and only if
+\begin{equation}\label{eq:dec-compl-0}
+   C(\og ; n) \lea 0.
+\end{equation}
+ \end{theorem}
+
+\begin{formalization}
+``Decidable'' is Mathlib's \texttt{Computable}.
+\end{formalization}
+
+% Gacs source line 4503
+ \begin{proof}
+  \proves{thm:g3.2.1}
+  \leanok
+If \( \og \) is decidable then~\eqref{eq:dec-compl-0} is obviously true.
+Suppose now that~\eqref{eq:dec-compl-0} holds:
+there is a constant \( c \) such that for all \( n \) we have \( C(\og(\frto{1}{n});n) < c \).
+Then there is a program \( p \) of length \( \le c \) with the property that for
+infinitely many \( n \), decides \( x \) on the optimal machine \( T_{0} \) up to \( n \).
+Then for all \( i \), we have \( T_{0}(p,i) = \og(i) \), showing that \( \og \) is
+decidable.
+ \end{proof}
+
+Let us use now the new tool to prove a somewhat more surprising result.
+Let \( \og \) be a 0-1 sequence that is the indicator function of a recursively
+enumerable set.
+In other words, the set \( \setof{i: \og(i) = 1} \) is recursively enumerable.
+As we know such sequences are not always decidable, so \( C(\og(\frto{1}{n}) ; n) \) is
+not going to be bounded.
+How fast can it grow?
+The following theorem gives exact answer, showing that it grows
+only logarithmically.
+
+% Gacs source line 4524
+ \begin{theorem}[Barzdin, see~\cite{Barzdin68}]
+  \label{thm:g3.2.2}
+  \lean{Kolmogorov.Information.Halting.decK_le_log_of_isRE, Kolmogorov.Information.Halting.exists_isRE_log_le_decK}
+  \leanok
+  \uses{def:g3.2.1}
+ \begin{alphenum}
+  \item\label{i:Barzdin-upper}
+Let \( \og \) be the indicator function of a recursively enumerable set \( E \).
+Then we have
+ \[
+   C(\og ; n) \lea \log n.
+ \]
+  \item\label{i:Barzdin-lower}
+The set \( E \) can be chosen such that for all \( n \) we have 
+\( C(\og ; n) \ge \log n \).
+ \end{alphenum}
+ \end{theorem}
+
+\begin{formalization}
+Logarithms are \( \lfloor \log_{2} \cdot \rfloor \). Part~(b) holds against every partial
+recursive decision machine, optimal or not.
+\end{formalization}
+
+% Gacs source line 4537
+ \begin{proof}
+  \proves{thm:g3.2.2}
+  \leanok
+Let us prove~\eqref{i:Barzdin-upper} first.
+Let \( n' \) be the first power of 2 larger than \( n \).
+Let \( k(n) = \sum_{i \le n'} \og(i) \).
+For a constant \( d \), let \( p = p(n, d) \) be a program
+that contains an initial segment \( q \) of size \( d \) followed by a
+the number \( k(n) \) in binary notation, and padded to \( \cei{\log n} + d \) 
+with 0's.
+The program \( q \) is self-delimiting, so it sees where \( k(n) \) begins.
+
+The machine \( T_{0}(p, i) \) works as follows, under the control of \( q \).
+From the length of the whole \( p \), it determines \( n' \).
+It begins to enumerate \( \og(\frto{1}{n}') \) until it found \( k(n) \) 1's.
+Then it knows the whole \( \og(\frto{1}{n}') \), so it outputs \( \og(i) \).
+
+Let us prove now~\eqref{i:Barzdin-lower}.
+Let us list all possible programs \( q \) for the machine \( T_{0} \) as 
+\( q = 1, 2, \dotsc \).
+Let \( \og(q) = 1 \) if and only if \( T_{0}(q, q) = 0 \).
+The sequence \( \og \) is obviously the indicator function of a recursively
+enumerable set.
+To show that \( \og \) has the desired property, assume that for some
+\( n \) there is a \( p \) with \( T_{0}(p, i) = \og(i) \) for all \( i \le n \).
+Then \( p > n \) since \( \og(p) \) is defined to be different from \( T_{0}(p, p) \).
+It follows that \( \len{p} \ge \log n \).
+ \end{proof}
+
+\begin{formalization}
+In~\eqref{i:Barzdin-upper} the program is the number \( k \) of elements of \( E \) below
+\( N = 2^{L} - 1 \), written in \( L = \lfloor \log n \rfloor + 1 \) bits; the machine reads
+\( N \) off the length of the program, so no prefix \( q \) is needed. In~\eqref{i:Barzdin-lower}
+a program \( p \) is identified with a number in \( [2^{\len{p}}, 2^{\len{p}+1}) \)
+(\texttt{Kolmogorov.Information.Halting.idx}), one-to-one.
+\end{formalization}
+
+Decision complexity has been especially convenient for the above theorem.
+Neither \( C(\og(\frto{1}{n})) \) nor \( C(\og(\frto{1}{n}) \mvert n) \) would have been suitable to
+formulate such a sharp result.
+To analyze the phenomenon further, we introduce some more concepts.
+
+% Gacs source line 4569
+ \begin{definition}
+  \label{def:g3.2.3}
+  \lean{Kolmogorov.Information.Halting.haltSet, Kolmogorov.Information.Halting.chi, Kolmogorov.Information.Halting.haltsIn}
+  \leanok
+  \uses{def:K}
+Let us denote, for this section, by \( E \) the set of those binary strings \( p \) on
+which the optimal prefix machine \( T \) halts:
+ \begin{equation}\label{eq:E^{t}}
+ \begin{split}
+     E^{t} &= \setof{p : T(p) \txt{ halts in \( < t \) steps} },
+\\   E     &= E^{\infty}.
+ \end{split}
+ \end{equation}
+Let 
+ \begin{equation}\label{eq:chi}
+  \chi = \chi_{E}
+ \end{equation}
+be the infinite sequence that is the indicator function of the
+set \( E \), when the latter is viewed as a set of numbers.
+ \end{definition}
+
+\begin{formalization}
+\( E \) is the domain of the prefix machine on the empty condition. ``Halts in \( < t \) steps''
+is read as ``halts within fuel \( t \)'' for a fixed code of the machine
+(\texttt{Kolmogorov.Information.Halting.haltsIn}, Mathlib's \texttt{Nat.Partrec.Code.evaln}),
+and \( E^{t} \) contains only programs of length at most \( t \). A string \( p \) is viewed as
+the number \( 2^{\len{p}} + \sum_{i} p_{i} 2^{i} \) (\texttt{Kolmogorov.Information.Halting.idx}),
+so the strings of length \( k \) get the numbers in \( [2^{k}, 2^{k+1}) \).
+\end{formalization}
+
+It is easy to see that the set \( E \) is complete among recursively enumerable
+sets with respect to many-one reduction.
+The above theorems show that though it contains an infinite amount of
+information, this information is not stored in the sequence \( \chi \) densely at
+all: there are at most \( \log n \) bits of it in the segment \( \chi(\frto{1}{n}) \).
+There is an infinite sequence, though, in which the same information is
+stored much more densely: as we will see later, maximally densely.
+
+% Gacs source line 4594
+ \begin{definition}[Chaitin's Omega]
+  \label{def:g3.2.4}
+  \lean{Kolmogorov.Information.Halting.omegaStage, Kolmogorov.Information.Halting.omega}
+  \leanok
+  \uses{def:g3.2.3}
+Let
+ \begin{equation}\label{eq:Og}
+ \begin{split}
+   \Og^{t} &= \sum_{p \in E^{t}} 2^{-\len{p}},
+\\ \Og     &= \Og^{\infty}.
+ \end{split}
+ \end{equation}
+ \end{definition}
+
+\begin{formalization}
+\( \Og \) is the halting probability of the prefix machine on the empty condition, a value in
+\( [0, 1] \), and \( \Og = \sup_{t} \Og^{t} \)
+(\texttt{Kolmogorov.Information.Halting.omega\_eq\_iSup}).
+\end{formalization}
+
+Let \( \Og(\frto{1}{n}) \) be the sequence of the first \( n \) binary digits in the
+expansion of \( \Og \), and let it also denote the binary number
+\( 0.\Og(1)\dotsb\Og(n) \).
+Then we have
+ \[
+    \Og(\frto{1}{n}) < \Og < \Og(\frto{1}{n}) + 2^{-n}.
+ \]
+
+\begin{formalization}
+\( \Og(\frto{1}{n}) \) is \texttt{Kolmogorov.Information.Halting.omegaPrefix}, the \( n \)-bit
+binary notation of \( a_{n} = \min(\lfloor \Og 2^{n} \rfloor, 2^{n} - 1) \). The bounds are
+proved with \( \le \) (\texttt{Kolmogorov.Information.Halting.omegaDigits\_le},
+\texttt{Kolmogorov.Information.Halting.omega\_le\_omegaDigits\_succ}). Strict inequality
+needs \( \Og \) not to be a dyadic rational. That holds for an exactly universal machine
+(see Theorem~\ref{thm:g3.2.3}), and is proved as
+\texttt{Kolmogorov.Information.Turing.omega\_ne\_dyadic}.
+\end{formalization}
+
+% Gacs source line 4612
+ \begin{theorem}
+  \label{thm:g3.2.3}
+  \lean{Kolmogorov.Information.Turing.chi_turingEquivalent_omega, Kolmogorov.Information.Turing.chi_le_omega, Kolmogorov.Information.Turing.omega_le_chi}
+  \leanok
+  \uses{def:g3.2.3, def:g3.2.4}
+The sequences \( \Og \) and \( \chi \) are Turing-equivalent.
+ \end{theorem}
+
+\begin{formalization}
+The optimal machine \( T \) is assumed \emph{exactly universal}: every prefix machine
+\( M \) is simulated as \( T(tp) = M(p) \) for a fixed tag \( t \)
+(\texttt{Kolmogorov.Information.Oracle.IsExactUniversal}). The repository's universal
+machine has this property
+(\texttt{Kolmogorov.Information.Oracle.universalPrefixMachine\_isExactUniversal}). Turing
+equivalence is Mathlib's \texttt{TuringEquivalent} of \( \chi \) and of the digit sequence of
+\( \Og \) (\texttt{Kolmogorov.Information.Turing.omegaBit}, digits counted from \( 0 \)),
+both as partial functions \( \dN \to \dN \).
+\end{formalization}
+
+% Gacs source line 4615
+ \begin{proof}
+  \proves{thm:g3.2.3}
+  \leanok
+Let us show first that given \( \Og \) as an oracle, a Turing machine can
+compute \( \chi \).
+Suppose that we want to know for a given string \( p \) of length \( k \) 
+whether \( \chi(p) = 1 \) that is whether \( T(p) \) halts.
+Let \( t(n) \) be the first \( t \) for which \( \Og^{t} > \Og(\frto{1}{n}) \).
+If a program \( p \) of length \( n \) is not in \( E^{t(n)} \) then it is not in \( E \)
+at all, since \( 2^{-\len{p}} = 2^{n} < \Og - \Og^{t} \).
+It follows that \( \chi(1 : 2^{n}) \) can be computed from \( \Og(\frto{1}{n}) \).
+
+To show that \( \Og \) can be computed from \( E \), let
+us define the recursively enumerable set
+ \[
+   E' = \setof{r : r \txt{ rational, } \Og > r}.
+ \]
+The set \( E' \) is reducible to \( E \) since the latter
+is complete among recursively enumerable sets
+with respect to many-one reduction.
+On the other hand, \( \Og \) is obviously computable from \( E' \).
+ \end{proof}
+
+\begin{formalization}
+For \( \chi \le_{T} \Og \) the Lean proof takes \( t \) to be the first stage with
+\( \Og^{t} + 2^{-n} > a_{n} 2^{-n} \), which needs no irrationality of \( \Og \); this direction
+holds for every prefix machine. For \( \Og \le_{T} \chi \), many-one completeness of \( E \)
+comes from exact universality. ``\( \Og \) is computable from \( E' \)'' uses
+\( \lfloor \Og 2^{N} \rfloor = \card{\setof{k < 2^{N} : 0 < k,\ k 2^{-N} < \Og}} \), which holds
+because \( \Og \) is not dyadic. That in turn follows because \( \chi \le_{T} \Og \) and \( \chi \)
+is not computable (\texttt{Kolmogorov.Information.Turing.chi\_not\_computable}). Reductions are
+built from a use principle for Mathlib's \texttt{RecursiveIn}
+(\texttt{Kolmogorov.Information.Turing.turingReducible\_of\_table}).
+\end{formalization}
+
+The following theorem shows that \( \Og \) stores the information more densely.
+
+% Gacs source line 4638
+ \begin{theorem}\label{thm:Og-complex}
+  \lean{Kolmogorov.Information.Halting.le_KP_omegaPrefix}
+  \leanok
+  \uses{def:g3.2.4, def:K}
+ We have \( K(\Og(\frto{1}{n})) \gea n \).
+ \end{theorem}
+
+% Gacs source line 4641
+ \begin{proof}
+  \proves{thm:Og-complex}
+  \leanok
+Let \( p_{1} \) be a self-delimiting program outputting \( \Og(\frto{1}{n}) \).
+Recall the definition of the sets \( E^{t} \) in~\eqref{eq:E^{t}}
+and the numbers \( \Og^{t} \) in~\eqref{eq:Og}.
+Let \( \Og_{1} \) denote the real number whose binary digits after 0 are given
+by \( \Og(\frto{1}{n}) \), and let \( t_{1} \) be the first \( t \) with \( \Og^{t}>\Og_{1} \).
+Let \( x_{1} \) be the first string \( x \) such that \( T(p)\ne x \) for any
+\( p\in E^{t_{1}} \).
+
+We have \( K(x_{1})\ge n \).
+On the other hand, we just computed \( x_{1} \) from \( p_{1} \), so
+\( K(x_{1}\mvert p_{1})\lea 0 \).
+We found \( n \le K(x_{1}) \lea K(p_{1}) + K(x_{1}\mvert p_{1}) \lea K(p_{1}) \).
+ \end{proof}
+
+\begin{formalization}
+Holds for every optimal prefix machine. The Lean proof takes \( t_{1} \) to be the first stage
+with \( \Og^{t} + 2^{-n} > \Og_{1} \), so it needs no irrationality of \( \Og \): then every
+halting program of length less than \( n \) is in \( E^{t_{1}} \)
+(\texttt{Kolmogorov.Information.Halting.halts\_of\_short}). The string \( x_{1} \) is searched
+among \( 0^{j} \), \( j = 0, 1, \dotsc \).
+\end{formalization}
+
+
+\section{The complexity of complexity}\label{sec:compl-compl}
+
+\subsection{Complexity is sometimes complex}
+
+This section is devoted to a quantitative estimation of the uncomputability
+of the complexity function \( C(x) \).
+Actually, we will work with the prefix complexity \( K(x) \), but the results
+would be very similar for \( C(x) \).
+The first result shows that the value
+\( K(x) \) is not only not computable from \( x \), but
+its conditional complexity \( K(K(x) \mvert x) \) given \( x \) is sometimes quite
+large.
+How large can it be expected to be?
+Certainly not much larger than \( \log K(x) + 2\log\log K(x) \), since we can
+describe any value \( K(x) \) using this many bits.
+But it can come close to this, as shown by Theorem~\ref{thm:compl-compl}.
+This theorem says that for all \( n \), there exists \( x \) of length \( n \) with
+ \begin{equation}\label{eq:compl-compl}
+  K(K(x) \mvert x) \gea \log n - \log \log n.
+ \end{equation}
+
+% Gacs source line 4678
+ \begin{proof}[Proof of Theorem~\protect\ref{thm:compl-compl}]
+  \proves{thm:compl-compl}
+  \leanok
+Let \( U(p, x) \) be the optimal self-delimiting machine for which
+\( K(y \mvert x) = \min_{U(p, x) = y} \len{p} \).
+Let \( s \le \log n \) be such that if \( \len{x} = n \) then 
+a \( p \) of length \( x \) can be found for which \( U(p, x) = K(x) \).
+We will show
+ \begin{equation}\label{eq:compl-compl.s-lb}
+   s \gea \log n - \log \log n.
+ \end{equation}
+Let us say that \( p \in \{0, 1\}^{s} \) is \df{suitable} for 
+\( x \in \{0,1\}^{n} \) if there exists a \( k = U(p, x) \) and a
+\( q \in \{0,1\}^{k} \) with \( U(p, \Lambda) = x \).
+Thus, \( p \) is suitable for \( x \) if it produces the length of some program of
+\( x \), not necessarily a shortest program.
+
+Let \( M_{i} \) denote the set of those \( x \) of length \( n \)
+for which there exist at least \( i \)
+different suitable \( p \) of length \( s \).
+We will examine the sequence
+ \[
+   \{0,1\}^{n} = M_{0} \spsq M_{1} \spsq \dots 
+   \spsq M_{j} \spsq M_{j+1} = \emptyset,
+ \]
+where \( M_{j} \ne \emptyset \).
+It is clear that \( 2^{s} \ge j \).
+To lowerbound \( j \), we will show that the sets \( M_{i} \) decrease only slowly:
+ \begin{equation}\label{eq:compl-compl.slow-decr}
+  \log \card{M_{i}} \lea \log\card{M_{i+1}} + 4 \log n.
+ \end{equation}
+We can assume 
+ \begin{equation}\label{eq:compl-compl.assume}
+   \log\card{M_{i} \xcpt M_{i+1}} \ge \log\card{M_{i}} - 1,
+ \end{equation}
+otherwise~\eqref{eq:compl-compl.slow-decr} is trivial.
+We will write a program that finds an element \( x \) of 
+\( M_{i} \xcpt M_{i+1} \) with the property \( K(x) \ge \log\card{M_{i}} - 1 \).
+The program works as follows.
+ \begin{itemize}
+
+  \item It finds \( i,n \) with the help of descriptions of length
+\( \log n + 2\log\log n \), and \( s \) with the help of a description of length
+\( 2 \log\log n \).
+
+  \item It finds  \( \card{M_{i+1}} \) with the help of a description of length
+\( \log\card{M_{i+1}} + \log n + 2\log\log n \).
+
+  \item From these data, it determines the set \( M_{i+1} \), and then begins
+to enumerate the set \( M_{i} \xcpt M_{i+1} \) as \( x_{1}, x_{2},\dotsc \).
+For each of these elements \( x_{r} \), it knows that there are exactly \( i \)
+programs suitable for \( x_{r} \), find all those, and find the shortest
+program for \( x \) produced by these.
+Therefore it can compute \( K(x_{r}) \).
+
+  \item According to the assumption~\eqref{eq:compl-compl.assume},
+there is an \( x_{r} \) with \( K(x_{r}) \ge \log\card{M_{i}} - 1 \).
+The program outputs the first such \( x_{r} \).
+
+ \end{itemize}
+The construction of the program shows that its length is
+\( \lea \log\card{M_{i+1}} + 4\log n \), hence for the \( x \) 
+we found 
+ \[
+   \log\card{M_{i}} - 1 \le K(x) \lea \log\card{M_{i+1}} + 4\log n,
+ \]
+which proves~\eqref{eq:compl-compl.slow-decr}.
+This implies \( j \ge n/(4 \log n) \), and hence~\eqref{eq:compl-compl.s-lb}.
+ \end{proof}
+
+\begin{formalization}
+The Lean proof makes the sketch explicit. \( s \) is \( \max_{\len{x} = n} K(K(x) \mvert x) \),
+and \( p \) with \( \len{p} \le s \) is suitable for \( x \) if \( U(p, x) \) names an upper bound on
+\( K(x) \) (\texttt{Kolmogorov.Information.CompComp.Suit}). The program that finds \( x \) is a
+search machine on the five numbers \( n, s, i, \card{M_{i+1}}, m \)
+(\texttt{Kolmogorov.Information.CompComp.dec\_spec}). Assumption~\eqref{eq:compl-compl.assume}
+is not needed: with \( m = \lfloor \log \card{M_{i} \xcpt M_{i+1}} \rfloor \) the machine outputs
+some \( x \) with \( K(x) \ge m \). This gives
+\( \card{M_{i}} + 1 \le (A + 1)(\card{M_{i+1}} + 1) \) with
+\( A = 2^{14 \log n + O(1)} \) (\texttt{Kolmogorov.Information.CompComp.slow\_decrease}); the
+constant \( 4 \) becomes \( 14 \) because the five numbers are coded with
+\( K(v) \le \log v + 2 \log\log v + O(1) \), which does not affect the result. Iterating from
+\( \card{M_{1}} = 2^{n} \) to \( \card{M_{2^{s+1}}} = 0 \) gives \( \log n \le s + \log\log n + O(1) \).
+\end{formalization}
+
+
+\subsection{Complexity is rarely complex}
+
+Let
+ \[
+  f(x) = K(K(x) \mvert x).
+ \]
+We have seen that \( f(x) \) is sometimes large.
+Here, we will show that the sequences \( x \) for which this happens are rare.
+Recall that we defined \( \chi \) in~\eqref{eq:chi} as
+the indicator sequence of the halting problem.
+
+% Gacs source line 4758
+ \begin{theorem}\label{thm:co-rarely-co}
+  \lean{Kolmogorov.Information.Oracle.rarely_complex, Kolmogorov.Information.Oracle.rarely_complex_info}
+  \leanok
+  \uses{def:g3.1.8, def:g3.2.3}
+We have
+ \[
+   I(\chi : x) \gea f(x) - 2.4 \log f(x).
+ \]
+ \end{theorem}
+
+\begin{formalization}
+We prove a sharper statement. There is a constant \( c \) with
+ \[
+   K(x \mvert \chi) + f(x) \le K(x) + 2K(f(x)) + c
+   \quad\text{for all } x,
+ \]
+that is, \( I(\chi : x) \ge f(x) - 2K(f(x)) - c \), where \( K(f(x)) \) is the
+complexity of the number \( f(x) \). This implies G\'acs' version. Since
+\( K(n) \le \log n + 2\log\log n + O(1) \le 1.2 \log n + O(1) \), we get
+\( 2K(f(x)) \le 2.4 \log f(x) + O(1) \). His constant \( 2.4 = 2 \times 1.2 \)
+was chosen to make the sum in his proof converge; the sharp form needs no such choice.
+
+Further departures from the printed statement:
+ \begin{itemize}
+ \item The interpreter \( U \) is assumed \emph{exactly universal}: every prefix
+  interpreter \( M \) is simulated as \( U(tp, y) = M(p, y) \) for a fixed tag \( t \)
+  (\texttt{Kolmogorov.Information.Oracle.IsExactUniversal}). The repository's universal
+  machine has this property.
+ \item \( K(x \mvert \chi) \) is complexity relative to the infinite oracle \( \chi \): the
+  infimum over \( m \) of \( K_V(x \mvert \chi(1:m)) \) for an optimal oracle machine \( V \).
+  An oracle machine is required to be monotone in the oracle prefix. Lean name:
+  \texttt{Kolmogorov.Information.Oracle.KPrel}, applied as \texttt{KPrel V (chi U) x}.
+ \item The proof reads \( K(x) \), \( f(x) \) and \( K(f(x)) \) directly off finite prefixes
+  of \( \chi \), so the equivalence of \( \Og \) and \( \chi \) is not used. The
+  semimeasure \( \m(x) 2^{f(x)} f(x)^{-2.4} \) is replaced by
+  \( \m(x) 2^{f(x)} 2^{-2K(f(x))} \).
+ \end{itemize}
+\end{formalization}
+
+In view of the inequality~\eqref{eq:info-guess}, this shows that such
+sequences are rare, even in terms of the universal probability, so
+they are certainly rare if we measure them by any
+computable distribution.
+So, we may even call such sequences ``exotic''.
+
+In the proof, we
+start by showing that the sequences in question are rare.
+Then the theorem will follow when we make use of the fact that
+\( f(x) \) is computable from \( \chi \).
+
+We need a lemma about the approximation of one measure by another from
+below.
+
+% Gacs source line 4778
+  \begin{lemma}\label{lem:measure-approx}
+  \lean{Kolmogorov.Information.Halting.measure_approx_le, Kolmogorov.Information.Halting.measure_approx_lt}
+  \leanok
+For any semimeasure \( \nu \) and measure \( \mu \le \nu \), let
+\( S_{m} = \setof{x : 2^{m} \mu(x) \le \nu(x)} \).
+Then \( \mu(S_{m}) \le 2^{-m} \).
+If \( \sum_{x} (\nu(x) - \mu(x)) < 2^{-n} \) then \( \nu(S_{1}) < 2^{-n+1} \).
+  \end{lemma}
+
+\begin{formalization}
+The first claim needs neither \( \mu \le \nu \) nor that \( \mu \) is a measure. In the
+second, \( 2^{-n} \) is generalized to any bound \( \varepsilon \), giving
+\( \nu(S_1) < 2\varepsilon \).
+\end{formalization}
+
+The proof is straightforward.
+
+% Proof environment ours: Gacs gives none.
+\begin{proof}
+  \proves{lem:measure-approx}
+  \leanok
+\end{proof}
+
+Let
+ \[
+     X(n) = \setof{x : f(x) = n}.
+ \]
+
+% Gacs source line 4793
+ \begin{lemma}\label{lem:co-co-rare}
+  \lean{Kolmogorov.Information.Halting.aprioriMeasure_complexityOfComplexity_le, Kolmogorov.Information.Halting.KPPlain_add_le_of_length}
+  \leanok
+  \uses{def:m, def:K}
+ We have
+ \[
+  \m(X(n)) \lem n^{1.2} 2^{-n}.
+ \]
+ \end{lemma}
+
+\begin{formalization}
+We prove the sharper bound
+ \[
+   \m(X(n)) \le C\, 2^{K(n)} 2^{-n},
+ \]
+which implies G\'acs' version because \( 2^{K(n)} \lem n^{1.2} \). The proof below gives
+the factor \( n^{1.2} \) only because it bounds
+\( K(\Og(1:k)) \lea k + 1.2 \log k \). We bound the complexity of \( \Og(1:k) \) for a
+well-chosen \( k \) instead. Take \( k = n - K(n) - 3e \) and describe \( \Og(1:k) \) by a
+shortest program for \( n \), followed by \( e \) and by the \( k \) digits written out. Given
+\( n \), \( K(n) \) and \( e \), the reader knows \( k \), so this description has length
+\( n - e + O(1) \), with the \( O(1) \) independent of \( e \)
+(\texttt{Kolmogorov.Information.Halting.KPPlain\_add\_le\_of\_length}). For \( x \notin Y(k) \)
+this gives
+\( f(x) \le n - e + c' \). Fixing \( e > c' \) yields
+\( X(n) \sbsq Y(n - K(n) - 3e) \), and hence the bound.
+
+Two smaller changes. The stage \( t(k) \) is the first \( t \) with
+\( \Og^{t} + 2^{-k} > \Og(1:k) \), which makes no use of \( \Og \) being irrational. The bad
+set is \( Y(k) = \setof{x : 2\m^{t(k)}(x) \le \m(x)} \), the multiplicative form of
+\( K(x) \le K^{t(k)}(x) - 1 \). It satisfies \( \m(Y(k)) < 4 \cdot 2^{-k} \).
+\end{formalization}
+
+% Gacs source line 4798
+ \begin{proof}
+  \proves{lem:co-co-rare}
+  \leanok
+  \uses{lem:measure-approx}
+Using the definition of \( E^{t} \) in~\eqref{eq:E^{t}}, let
+\begin{align*}
+      \m^{t}(x) &= \sum\setof{p : T(p) = x \txt{ in \( < t \) steps} },
+\\    K^{t}(x)  &= -\log \m^{t}(x).
+\end{align*}
+Then according to the definition~\eqref{eq:m(x)} we have
+\( \m(x) = \m^{\infty}(x) \), and \( K(x) \eqa K^{\infty}(x) \).
+Let
+ \begin{align*}
+     t(k) &= \min\setof{t : \Og(1 : k) < \Og^{t}},
+\\ \mu    &= \m^{t(k)}.
+ \end{align*}
+Clearly, \( K^{t(k)}(x) \gea K(x) \).
+Let us show that \( K^{t(k)}(x) \)
+is a good approximation for \( K(x) \) for most \( x \).
+Let
+ \[
+   Y(k) = \setof{x : K(x) \le K^{t(k)}(x) - 1}.
+ \]
+By definition, for \( x \notin Y(k) \) we have
+ \[
+   |K^{t(k)}(x) - K(x)| \eqa 0.
+ \]
+On the other hand, applying Lemma~\ref{lem:measure-approx} with
+\( \mu = \m^{t(k)} \), \( \nu = \m \), we obtain
+ \begin{equation}\label{eq:Yk-ub}
+   \m(Y(k)) < 2^{-k + 1}.
+ \end{equation}
+Note that
+ \[
+   K(K^{t(k)}(x) \mvert x, \Og(1 : k)) \eqa 0,
+ \]
+therefore for \( x \notin Y(k) \) we have
+ \begin{align*}
+  K(K(x) \mvert x, \Og(1 : k)) &\eqa 0,
+\\   K(K(x) \mvert x) &\lea k + 1.2 \log k.
+ \end{align*}
+If \( n = k + 1.2\log k \) then \( k \eqa n - 1.2\log n \), and hence,
+if \( x \notin Y(n - 1.2\log n) \) then \( K(K(x) \mvert x) \lea n \).
+Thus, there is a constant \( c \) such that
+ \[
+   X(n) \sbsq Y(n - 1.2\log n - c).
+ \]
+Using~\eqref{eq:Yk-ub} this gives the statement of the lemma.
+ \end{proof}
+
+% Gacs source line 4845
+ \begin{proof}[Proof of Theorem~\protect\ref{thm:co-rarely-co}]
+  \proves{thm:co-rarely-co}
+  \leanok
+  \uses{lem:co-co-rare}
+Since \( f(x) \) is computable from \( \Og \), the function
+ \[
+   \nu(x) = \m(x)2^{f(x)}(f(x))^{-2.4}
+ \]
+is computable from \( \Og \).
+Let us show that it is a semimeasure (within a multiplicative constant).
+Indeed, using the above lemma:
+ \[
+   \sum_{x} \nu(x) = \sum_{k} \sum_{x \in X(k)} \nu(x)
+                 = \sum_{k} 2^{k} k^{-2.4} \m(X(k))
+                 = \sum_{k} k^{-1.2} \lem 1.
+ \]
+Since \( \m(\cdot \mvert \Og) \) is the universal semimeasure relative to \( \Og \)
+we find \( \m(x \mvert \Og) \gem \nu(x) \), hence
+ \begin{align*}
+   K(x \mvert \Og) &\lea -\log \nu(x) = K(x) - f(x) + 2.4\log f(x),
+\\    I(\Og : x) &\gea f(x) - 2.4 \log f(x).
+ \end{align*}
+Since \( \Og \) is equivalent to \( \chi \), the proof is complete.
+  \end{proof}
+
+\begin{formalization}
+With the sharp Lemma~\ref{lem:co-co-rare}, the same computation for
+\( \nu(x) = \m(x) 2^{f(x)} 2^{-2K(f(x))} \) reads
+\( \sum_x \nu(x) \le \sum_k 2^{k - 2K(k)} \m(X(k)) \le C \sum_k 2^{-K(k)} \le C \),
+by Kraft's inequality. Instead of the universal semimeasure relative to \( \Og \), the Lean
+proof issues the requests \( (x,\, K(x) - f(x) + 2K(f(x)) + c_0) \) to a relativized
+Kraft--Chaitin coder (\texttt{Kolmogorov.Information.Oracle.exists\_oracleMachine\_of\_requests}).
+The coder reads its requests off finite prefixes of \( \chi \).
+\end{formalization}

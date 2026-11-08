@@ -24,8 +24,10 @@
 % Theorem 1.4.2 and a Corollary 1.4.2.  Reproducing it keeps every reference
 % in the blueprint equal to the number printed in his manuscript.
 %
-% This assumes a document class with chapters (report or book) and a single
-% \chapter for Chapter 1, so that the section counter reads 1.3, 1.4 and so on.
+% This assumes a document class with chapters (report or book), so that the
+% section counter reads 1.3, 1.4 and so on.  Later chapters set the chapter and
+% section counters by hand (content.tex), because only parts of them are
+% reproduced.
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}{Lemma}[section]
@@ -35,18 +37,47 @@
 \theoremstyle{definition}
 \newtheorem{definition}[lemma]{Definition}
 \newtheorem{example}[lemma]{Example}
+\newtheorem{examples}[lemma]{Examples}
+\newtheorem{notation}[lemma]{Notation}
 
 \theoremstyle{remark}
 \newtheorem{remark}[lemma]{Remark}
+\newtheorem{remarks}[lemma]{Remarks}
 
 % Used to flag every place where the Lean statement departs from the printed
 % one.  Unnumbered, so it never enters the dependency graph.
 \newtheorem*{formalization}{Formalization note}
 
-\theoremstyle{plain}
+% Statements that are ours, not Gacs'.  Chapters 2-4 use them for the
+% infrastructure a planned formalization needs (their own counter, so his
+% numbering is untouched); Chapter 6 (Solomonoff induction) is ours throughout.
+% Only definition, lemma, proposition, theorem and corollary become nodes of
+% the dependency graph, so "ourdefinition" and "ourtheorem" are graph nodes
+% only because the blueprint package option thms lists them (web.tex).
+\newtheorem{ourdefinition}{Definition}
+\renewcommand{\theourdefinition}{\Alph{ourdefinition}}
+\newtheorem{ourtheorem}[ourdefinition]{Theorem}
 
-% plasTeX asks for this when several environments share the lemma counter.
+\theoremstyle{plain}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{question}{Question}
+
+% plasTeX asks for these when several environments share a counter.
 \providecommand{\lemmaname}{Lemma}
+\providecommand{\ourdefinitionname}{Definition}
+\providecommand{\questionname}{Question}
+
+% Gacs numbers equations within sections, (1.3.3); so do we, so that every
+% equation number is the one printed in his manuscript.
+\numberwithin{equation}{section}
+
+% leanblueprint counts a node as "defined" only if its environment is literally
+% called definition.  A formalized ourdefinition would otherwise count as an
+% unproved theorem and keep every result that uses it from showing as fully
+% proved.  Right after such a definition, put
+%   \begin{definedinlean}\proves{its-label}\leanok\end{definedinlean}
+% an invisible "proof" that marks it done.  The two versions of the environment
+% are in macros/web.tex and macros/print.tex.
 
 % ---------------------------------------------------------------------------
 % Lists
@@ -139,3 +170,44 @@
 \newcommand{\cnv}{\txt{cnv}}
 \newcommand{\df}[1]{\emph{#1}}       % his emphasis for a term being defined
 \newcommand{\nn}{\nonumber}
+
+% ---------------------------------------------------------------------------
+% Added for Chapters 2-4
+% ---------------------------------------------------------------------------
+% From gacs.sty and his preamble.  His \renewcommand of \t, \d, \u and \S
+% (normally accents and the section sign) is kept: the chapters use \t and \d
+% for the universal test and the deficiency of randomness.
+\newcommand{\bB}{\mathbf{B}}
+\newcommand{\bM}{\mathbf{M}}
+\newcommand{\bX}{\mathbf{X}}
+\newcommand{\bY}{\mathbf{Y}}
+\newcommand{\cA}{\mathcal{A}}
+\newcommand{\cB}{\mathcal{B}}
+\newcommand{\cC}{\mathcal{C}}
+\newcommand{\cE}{\mathcal{E}}
+\newcommand{\cH}{\mathcal{H}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\cP}{\mathcal{P}}
+\newcommand{\cR}{\mathcal{R}}
+\newcommand{\cX}{\mathcal{X}}
+\newcommand{\gm}{\gamma}
+\newcommand{\Gg}{\Gamma}
+\newcommand{\Dg}{\Delta}
+\renewcommand{\lg}{\lambda}          % his choice; it shadows the operator lg
+\newcommand{\sg}{\sigma}
+\newcommand{\Sg}{\Sigma}
+\newcommand{\imp}{\Rightarrow}
+\newcommand{\sbs}{\subset}
+\newcommand{\spsq}{\supseteq}
+\newcommand{\xcpt}{\setminus}
+\newcommand{\postfix}{\sqsupseteq}
+\newcommand{\Paren}[1]{{\left( #1\right)}}
+\newcommand{\evof}[1]{\mathopen[\verythinmathskip#1\verythinmathskip\mathclose]}
+\newcommand{\set}[1]{\mathopen\{#1\mathclose\}}
+\newcommand{\lint}[2]{\left[#1,#2\right)}
+\newcommand{\exist}[1]{\exists\, #1\;}
+\newcommand{\s}{s}
+\renewcommand{\S}{S}
+\renewcommand{\t}{\mathbf{t}}        % the universal test
+\renewcommand{\d}{\mathbf{d}}        % the deficiency of randomness
+\renewcommand{\u}{u}

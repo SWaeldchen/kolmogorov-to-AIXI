@@ -1,0 +1,3180 @@
+% ===========================================================================
+% Chapter 4: Generalizations (formalization plan)
+% ===========================================================================
+% Gacs source lines 4871-7289, reproduced in full with the author's permission.
+% Nothing of this chapter is formalized yet, so no node carries \lean or \leanok.
+% Planned nodes carry neither \notready nor \leanok; out-of-scope nodes carry
+% \notready.  Our own infrastructure (Definitions A-C, Theorems D-F) uses the
+% separate "ourdefinition" counter, so every number of his is unchanged.
+%
+% Changes to his text: sloppypar/sloppyenv wrappers dropped; one \qedhere
+% dropped (proof of Proposition 4.6.10); references to Appendices A and B
+% replaced by their printed numbers; numbered items he left unlabeled get
+% labels <kind>:g<number>.
+
+\chapter{Generalizations}
+
+\begin{formalization}
+Nothing in this chapter is formalized yet: this part of the blueprint is a plan. G\'acs works
+over computable complete metric spaces, with arbitrary and possibly noncomputable measures, and
+leans on the computable analysis of Appendix B. Neither Mathlib nor this repository has that
+theory, so the plan specializes every statement to two spaces: the discrete space $\dS$ of finite
+binary strings (identified with $\dN$), and the Cantor space $\dB^{\dN}$ of infinite binary
+sequences, where Chapters 2 and 3 already work, cylinder by cylinder. A measure is a function on
+strings, and a noncomputable measure reaches a computation through its names, which are oracles
+in the sense of Chapter 3 (Definition~\ref{our:measure}). Lower semicomputability in a measure
+argument is defined without reference to names (Definition~\ref{our:lsc}), and so is
+$K(x \mvert \mu)$ (Definition~\ref{our:m-cond}). These and the facts from Appendix B that the
+proofs use are stated as our Definitions A--C and Theorems D--F, which have their own counter.
+
+Planned: Sections 4.1, 4.2, 4.4 and 4.5, Subsections 4.6.1, 4.6.3 and 4.6.4, and from
+Section 4.3 Lemma~\ref{lem:concentr} and Proposition~\ref{thm:no-neutral}. Each planned node
+lists the results of Chapters 1--3 it generalizes. Out of scope, marked not ready: the existence
+of neutral measures and the semicomputability results of Section 4.3 (compactness of the space of
+measures, Sperner's lemma), Proposition~\ref{thm:test-charac} on general metric spaces, and all of
+Section 4.7.
+
+Conventions as in Chapters 2 and 3: tests are multiplicative ($\t = 2^{\d}$, $2^{-H} = \t$),
+valued in $\clint{0}{\infty}$, with no logarithms; constants are existential unless the statement
+is about the constant, as $K(k)$ in Proposition~\ref{propo:test-computable-mon}.
+\end{formalization}
+
+ \section{Continuous spaces, noncomputable measures}\label{sec:cont-spaces}
+
+This section starts the consideration of randomness in continuous spaces and
+randomness with respect to noncomputable measures.
+
+\subsection{Introduction}
+
+The algorithmic theory of randomness is well developed when the underlying
+space is the set of finite or infinite sequences and the underlying
+probability distribution is the uniform distribution or a computable
+distribution.
+These restrictions seem artificial.  
+Some progress has been
+made to extend the theory to arbitrary Bernoulli distributions by
+Martin-L\"of in~\cite{MLof66art}, and to arbitrary distributions, by Levin
+in~\cite{LevinRand73,LevinUnif76,LevinRandCons84}.
+The paper~\cite{HertlingWeihrauchRand98} by Hertling and Weihrauch 
+also works in general spaces, but it is restricted to computable
+measures.
+Similarly, Asarin's thesis~\cite{Asarin88} defines randomness for sample
+paths of the Brownian motion: a fixed random process with computable
+distribution.
+
+The exposition here has been inspired mainly by Levin's early 
+paper~\cite{LevinUnif76} (and the much more elaborate~\cite{LevinRandCons84}
+that uses different definitions): let us summarize part of the content
+of~\cite{LevinUnif76}.
+The notion of a constructive topological space \( \bX \) and the space of
+measures over \( \bX \) is introduced.
+Then the paper defines the notion of a uniform test.
+Each test is a lower semicomputable function \( (\mu,x) \mapsto f_{\mu}(x) \),
+satisfying \( \int f_{\mu}(x) \mu(dx) \le 1 \) for each measure \( \mu \).
+There are also some additional conditions.
+The main claims are the following.
+ \begin{alphenum}
+
+  \item There is a universal test \( \t_{\mu}(x) \), a test 
+such that for each other test \( f \) there is a constant \( c > 0 \) with
+\( f_{\mu}(x) \le c\cdot \t_{\mu}(x) \).
+  The \df{deficiency of randomness} is defined as 
+\( \d_{\mu}(x) = \log\t_{\mu}(x) \). 
+
+  \item The universal test has some strong properties of ``randomness
+conservation'': these say, essentially,
+that a computable mapping or a computable
+randomized transition does not decrease randomness.
+
+  \item There is a measure \( M \) with the property that for
+every outcome \( x \) we have \( \t_{M}(x) \le 1 \).
+In the present work, we will call such measures \df{neutral}.
+
+  \item\label{i:Levin.semimeasure}
+Semimeasures (semi-additive measures)
+are introduced and it is shown that there is a lower semicomputable
+semi-measure that is neutral (let us assume that the \( M \) introduced above
+is lower semicomputable).
+
+  \item Mutual information \( I(x : y) \)
+is defined with the help of (an appropriate
+version of) Kolmogorov complexity, between outcomes \( x \) and \( y \).
+It is shown that \( I(x : y) \) is essentially equal to \( \d_{M \times M}(x,y) \).
+This interprets mutual information as a kind of ``deficiency of independence''.
+
+ \end{alphenum}
+This impressive theory leaves a number of issues unresolved:
+  \begin{enumerate}
+
+   \item The space of outcomes is restricted to be a compact topological
+space, moreover, a particular compact space: the set of 
+sequences over a finite alphabet (or, implicitly in~\cite{LevinRandCons84},
+a compactified infinite alphabet).
+However, a good deal of modern probability theory happens over
+spaces that are not even locally compact:
+for example, in case of the Brownian motion, over the
+space of continuous functions.
+
+   \item The definition of a uniform randomness test includes some conditions
+(different ones in~\cite{LevinUnif76} and 
+in~\cite{LevinRandCons84}) that seem somewhat arbitrary.
+
+   \item No simple expression is known for the general
+universal test in terms of description complexity.
+Such expressions are nice to have if they are available.
+
+  \end{enumerate}
+
+Here, we intend to carry out as much of Levin's program as seems
+possible after removing the restrictions.
+A number of questions remain open, but we feel that they are worth
+to be at least formulated.
+A fairly large part of the exposition
+is devoted to the necessary conceptual machinery.
+This will also allow to carry further some other initiatives started in the
+works~\cite{MLof66art} and~\cite{LevinRand73}: the study of tests that test
+nonrandomness with respect to a whole class of measures (like the Bernoulli
+measures).
+
+Constructive analysis has been developed by several authors,
+converging approximately on the same concepts,
+We will make use of a simplified  version of the theory introduced  
+in~\cite{WeihrauchComputAnal00}.
+As we have not found a constructive measure theory in the
+literature fitting our purposes, we will develop this theory here,
+over (constructive) complete separable metric spaces.
+This generality is well supported by standard results in measure
+theoretical probability, and is
+sufficient for constructivizing a large part of current probability
+theory.
+
+The appendix recalls some of the needed topology, measure theory,
+constructive analysis and constructive measure theory.
+We also make use of the notation introduced there.
+
+
+\subsection{Uniform tests}
+
+We first define tests of randomness with respect to an arbitrary measure.
+Recall the definition of lower semicomputable
+real functions on a computable metric space \( \bX \).
+
+\begin{formalization}
+Definitions A--C and Theorems D--E below are ours. They restate, for the discrete space $\dS$
+and the Cantor space $\dB^{\dN}$, what G\'acs takes from Appendix B: the space of measures, lower
+semicomputability on it, and conditional tests; Theorems D and E collect the facts from
+Appendix B that his proofs use. Theorem F, after Remark~\ref{rem:oracle-warning}, relates
+$K(x \mvert \mu)$ to Chapter 3's oracle complexity.
+\end{formalization}
+
+% Ours: the space of measures over our two spaces, and names (Appendix B, constructive measure theory)
+\begin{ourdefinition}[Measures and their names]\label{our:measure}
+Let \( \bX \) be either the discrete space \( \dS \) of finite binary strings or the Cantor
+space \( \dB^{\dN} \) of infinite binary sequences.
+ \begin{alphenum}
+  \item A \df{measure} over \( \dS \) is a function \( \mu:\dS\to\clint{0}{1} \) with
+\( \sum_{x}\mu(x) = 1 \).
+A \df{measure} over \( \dB^{\dN} \) is a function \( \mu:\dS\to\clint{0}{1} \), giving the
+measures of the cylinders, with \( \mu(\Lg) = 1 \) and \( \mu(w) = \mu(w0)+\mu(w1) \) for all
+\( w \).
+In both cases \( \cM(\bX) \) is the set of all such measures; no computability is assumed.
+  \item A \df{name} of a measure \( \mu \) is an infinite binary sequence \( A \) that lists, in a
+fixed order and a self-delimiting code, a rational number \( q_{A}(w,k) \) for every string
+\( w \) and every \( k\in\dN \), with \( \card{\mu(w)-q_{A}(w,k)} \le 2^{-k} \).
+Every finite prefix of \( A \) thus determines finitely many of the values \( q_{A}(w,k) \).
+  \item The integral of \( f:\dS\to\clint{0}{\infty} \) is \( \mu f = \sum_{x}\mu(x)f(x) \).
+Over \( \dB^{\dN} \), if \( f(\xi) = \sup_{n}g(\xi^{\le n}) \) for a function \( g \) on strings
+that is monotonic with respect to the prefix relation, then
+\( \mu f = \sup_{n}\sum_{w\in\dB^{n}}\mu(w)g(w) \).
+ \end{alphenum}
+\end{ourdefinition}
+
+\begin{formalization}
+Planned. These are Chapter 2's \texttt{ComputableMeasure} and \texttt{ComputableSeqMeasure}
+(with \texttt{IsSeqMeasure}) without their computability field, so Chapter 2's computable
+measures are a special case. A name is a \texttt{Seq}, read through its finite prefixes
+\texttt{seqTake A m}, as Chapter 3's oracle machines read an oracle. Every measure has a name,
+and a measure is computable in Chapter 2's sense (\texttt{IsComputableENNReal}) if and only if it
+has a computable name. The integral over $\dB^{\dN}$ is Chapter 2's \texttt{levelIntegral} with
+the supremum over $n$; by monotone convergence it does not depend on $g$. The counting measure
+$\#$ on $\dS$, $\#(x) = 1$, serves in Section 4.5 as an integrating measure; it is not an element
+of $\cM(\dS)$.
+\end{formalization}
+
+% Ours: lower semicomputability with a measure argument (Appendix B, semicomputability)
+\begin{ourdefinition}[Lower semicomputability in a measure argument]\label{our:lsc}
+  \uses{our:measure, def:semicomputability}
+Let \( \bX \) be as in Definition~\ref{our:measure}.
+ \begin{alphenum}
+  \item A \df{basic set} is a subset of \( \bX\times\dS\times\cM(\bX) \) of the form
+ \[
+  \setof{(x,y,\mu) : x\in w,\; y = v,\; a_{j} < \mu(u_{j}) < b_{j} \txt{ for } j=1,\dots,k},
+ \]
+given by strings \( w,v,u_{1},\dots,u_{k} \) and rationals \( a_{j}<b_{j} \).
+Here \( x\in w \) means \( x = w \) over \( \dS \) and \( w\prefix x \) over \( \dB^{\dN} \).
+Basic sets are coded by natural numbers.
+  \item A function \( f:\bX\times\dS\times\cM(\bX)\to\clint{-\infty}{\infty} \) is \df{lower
+semicomputable} if there is a computably enumerable set \( E \) of pairs (basic set \( S \),
+rational \( r \)) such that for every rational \( r \), the set \( \setof{f>r} \) is the union of
+the basic sets \( S \) with \( (S,r)\in E \).
+For \( f\ge 0 \) this says that \( f \) is the supremum of an enumerated family of functions
+\( r\cdot 1_{S} \).
+It is \df{upper semicomputable} if \( -f \) is lower semicomputable.
+  \item For a fixed measure \( \mu \), a function \( g \) over \( \bX \) is
+\df{\( \mu \)-lower semicomputable} if \( g = f(\cdot,\mu) \) for some lower semicomputable
+\( f \) without the argument \( y \).
+  \item The same definitions apply with the argument \( y \) absent or ranging over \( \dZ \),
+and with several measure arguments, possibly over different spaces; each measure argument
+contributes finitely many conditions to a basic set.
+ \end{alphenum}
+\end{ourdefinition}
+
+\begin{formalization}
+Planned. The definition sees a measure only through finitely many of its values, so it does not
+depend on names; Remark~\ref{rem:oracle-warning} explains why this matters. Without a measure
+argument it is Chapter 1's lower semicomputability (\texttt{IsLSC}, and Chapter 2's unary
+version), and substituting a computable measure leads back there
+(Theorem~\ref{our:lsc-props}). Over both spaces the sets $\setof{\mu : a<\mu(u)<b}$ generate the
+weak topology on probability measures, so this is G\'acs's notion restricted to our spaces. In
+Lean: a computable enumeration of codes of basic sets with rational levels, a decidable check of
+finitely many strict inequalities, and the supremum over the enumeration.
+\end{formalization}
+
+% Ours: conditional universal tests, m(x | mu), K(x | mu)
+\begin{ourdefinition}[Conditional tests; \( \m(x \mvert \mu) \) and \( K(x \mvert \mu) \)]\label{our:m-cond}
+  \uses{our:lsc, coroll:trim-univ, def:m}
+Let the condition \( y \) range over \( \dS \), over \( \dZ \), over a space of measures
+\( \cM(\bX') \), or over a finite product of these.
+ \begin{alphenum}
+  \item The \df{conditional universal test} \( \t_{\mu}(x \mvert y) \) is a function, lower
+semicomputable in \( (x,y,\mu) \), with \( \mu^{x}\t_{\mu}(x \mvert y)\le 1 \) for all
+\( y,\mu \), that dominates every such function up to a multiplicative constant.
+It exists by Corollary~\ref{coroll:trim-univ} with \( s = 1 \).
+We write \( H_{\mu}(x \mvert y) = -\log\t_{\mu}(x \mvert y) \).
+  \item Over \( \dS \), with the counting measure \( \# \) in place of \( \mu \), let
+\( \m(x \mvert y) = \t_{\#}(x \mvert y) \): a universal function among those lower
+semicomputable in \( (x,y) \) with \( \sum_{x}\m(x \mvert y)\le 1 \) for all \( y \).
+Let \( K(x \mvert y) = -\log\m(x \mvert y) = H_{\#}(x \mvert y) \).
+In particular \( \m(x \mvert \mu) \) and \( K(x \mvert \mu) \) are defined for every measure
+\( \mu \).
+ \end{alphenum}
+\end{ourdefinition}
+
+\begin{formalization}
+Planned. This is how G\'acs uses $K(x \mvert \mu)$ in Section 4.6: as $-\log$ of a semimeasure
+that is lower semicomputable in $(x,\mu)$, not as the length of a shortest program (see the
+paragraph before Proposition~\ref{propo:H/mu-computable}, and
+Remark~\ref{rem:oracle-warning}). In Lean, $\m(x \mvert y)$ is the universal element obtained by
+relativizing Chapter 1's trimming (\texttt{exists\_lsc\_semimeasure\_family}, \texttt{truncG})
+uniformly in the measure argument. With a string condition it agrees with Chapter 1's conditional
+$\m$ up to a constant factor, so by the coding theorem $K(x \mvert y)$ is then the prefix
+complexity up to an additive constant. Chapter 3's oracle complexity \texttt{KPrel V A x} for a
+name $A$ of $\mu$ satisfies only one inequality (Theorem~\ref{our:oracle-bound}), so it does not
+serve as the definition.
+\end{formalization}
+
+% Ours: the facts about lower semicomputability that the proofs use (Appendix B)
+\begin{ourtheorem}[Lower semicomputability in a measure argument]\label{our:lsc-props}
+  \uses{our:lsc}
+ \begin{alphenum}
+  \item (Oracle form.) A function \( f\ge 0 \) is lower semicomputable if and only if a single
+oracle machine, given \( (x,y) \) and any name \( A \) of \( \mu \) as its oracle, enumerates
+rationals whose supremum is \( f(x,y,\mu) \).
+  \item (Computable approximations, Proposition B.1.38.) A function \( f\ge 0 \) is lower
+semicomputable if and only if it is the supremum of a computable sequence of functions
+\( f_{i} \), each depending on \( x \) through finitely many strings and on \( \mu \) through
+finitely many values \( \mu(u) \), rational-piecewise-linearly.
+For such \( f_{i} \), the integral \( \mu^{x}f_{i}(x,y,\mu) \) is computable from \( y \) and a
+name of \( \mu \).
+  \item (Cantor space, Proposition B.1.23.) Over \( \dB^{\dN} \), \( f \) is lower
+semicomputable if and only if \( f(\xi,y,\mu) = \sup_{n}g(\xi^{\le n},y,\mu) \) for a function
+\( g \) on strings that is lower semicomputable and monotonic with respect to the prefix
+relation.
+  \item (Closure.) Lower semicomputability is preserved by suprema of computable sequences, by
+finite sums and products of nonnegative functions, by sums \( \sum_{z}\nu(z)f(z,\dots) \) over a
+discrete argument against a measure argument \( \nu \), by substituting a computable measure for
+a measure argument, by substituting computable maps of measures (the image \( \Lg^{*}\mu \) under
+a computable kernel over \( \dS \) whose rows sum to 1, the product \( \mu\times\nu \), the
+marginals, the image under a computable map), and by substituting an upper semicomputable
+integer-valued function for an integer argument in which the function is decreasing.
+ \end{alphenum}
+\end{ourtheorem}
+
+\begin{formalization}
+Planned, as the toolkit of the chapter. In (a), a prefix of a name confines each value it lists
+to a closed rational interval, and every measure in the corresponding open box has a name with
+that prefix; the machine reads its oracle monotonically, as Chapter 3's \texttt{IsOracleMachine}
+requires. (b) is what makes G\'acs's proof of Theorem~\ref{thm:trim} work: the strict comparison
+of a computable integral with a lower semicomputable bound is an open condition on $\mu$. (c) is
+how Chapter 2 represents functions on sequences (\texttt{seqVal}, \texttt{IsMonoStr}). In (d) the
+image $\Lg^{*}\mu(y) = \sum_{x}\mu(x)\lg_{x}(y)$ is lower semicomputable, and also upper
+semicomputable as $1-\sum_{y'\ne y}\Lg^{*}\mu(y')$, the device Chapter 2 uses for image measures
+(\texttt{ExactConservation.lean}).
+\end{formalization}
+
+% Ours: infima over compact parameter sets (Proposition B.1.31, specialized)
+\begin{ourtheorem}[Infima over compact parameter sets]\label{our:lsc-inf}
+  \uses{our:lsc}
+ \begin{alphenum}
+  \item Let \( p\mapsto\mu_{p} \), \( p\in\clint{0}{1} \), be a computable family of measures,
+that is \( (w,p)\mapsto\mu_{p}(w) \) is computable, and let \( f \) be lower semicomputable.
+Then \( (x,y)\mapsto\inf_{p}f(x,y,\mu_{p}) \) is lower semicomputable.
+  \item Let \( u \) be lower semicomputable over \( \dB^{\dN} \), in \( (\xi,\mu) \).
+Then \( (z,\mu)\mapsto\inf\setof{u(\og,\mu) : z\prefix\og} \) is lower semicomputable over
+\( \dS \).
+ \end{alphenum}
+\end{ourtheorem}
+
+\begin{formalization}
+Planned. These are the two instances of Proposition B.1.31 (the infimum of a lower
+semicomputable function over an effectively compact space is lower semicomputable) that the plan
+needs: the interval $\clint{0}{1}$, where a finite cover by rational open intervals is
+recognizable, and the cylinder of $z$, where a finite cover by cylinders is recognizable. The
+Bernoulli family $p\mapsto B_{p}$ of Definition~\ref{def:g4.2.1} is computable, so (a) applies to
+it; this replaces Example~\ref{ex:g4.2.3} and Proposition B.1.32 in the plan.
+\end{formalization}
+
+
+% Gacs source line 4994
+ \begin{definition}\label{def:mu-test}
+  \uses{our:measure, our:lsc, def:g2.2.1, def:g2.3.29}
+Let us be given a computable complete metric space \( \bX = (X, d, D, \ag) \).
+For an arbitrary measure \( \mu\in\cM(\bX) \), a \( \mu \)-\df{test of randomness}
+is a \( \mu \)-lower semicomputable function \( f:X\to\ol\dR_{+} \) with the property
+\( \mu f \le 1 \).
+We call an element \( x \) \df{random} with respect to \( \mu \)
+if \( f(x)<\infty \) for all \( \mu \)-tests \( f \).
+But even among random elements, the size of the tests quantifies
+(non-)randomness.
+
+A \df{uniform test} of randomness is a lower semicomputable function
+\( f:\bX\times\cM(\bX)\to \ol\dR_{+} \), 
+written as \( \tup{x,\mu}\mapsto f_{\mu}(x) \)
+such that \( f_{\mu}(\cdot) \) is a \( \mu \)-test for each \( \mu \).
+ \end{definition}
+
+\begin{formalization}
+Planned for $\bX = \dS$ and $\bX = \dB^{\dN}$, with $\cM(\bX)$ and the integral $\mu f$ as in
+Definition~\ref{our:measure} and lower semicomputability as in Definition~\ref{our:lsc}. A test
+over $\dB^{\dN}$ is represented by a prefix-monotone function on strings
+(Theorem~\ref{our:lsc-props}(c)), as Chapter 2 represents its tests (\texttt{IsIntegrableTest},
+\texttt{IsIntegrableSeqTest}). For a computable $P$, the $P$-tests are exactly Chapter 2's tests
+for $P$.
+\end{formalization}
+
+The condition \( \mu f\le 1 \) guarantees that the
+probability of those outcomes whose randomness is \( \ge m \) is at most
+\( 1/m \).
+The definition of tests is in the spirit of Martin-L\"of's tests.
+The important difference is in the semicomputability condition:
+instead of restricting the measure \( \mu \) to be computable, we require the
+test to be lower semicomputable also in its argument \( \mu \).
+
+The following result implies that every \( \mu \)-test can be extended to a uniform
+test.
+
+% Gacs source line 5022
+ \begin{theorem}\label{thm:trim}
+  \uses{our:lsc, our:measure}
+Let \( \phi_{e} \), \( e=1,2,\dots \) be an enumeration of all lower semicomputable
+functions \( \bX\times\bY\times\cM(\bX)\to\ol\dR_{+} \), where \( \bY \) is also a
+computable
+metric space, and \( s:\bY\times\cM(\bX)\to\ol\dR \) a lower semicomputable
+function.
+There is a recursive function \( e\mapsto e' \) with the property that
+ \begin{alphenum}
+  \item For each \( e \), the function \( \phi_{e'}(x,y,\mu) \) is everywhere defined
+with \( \mu^{x}\phi_{e'}(x,y,\mu)\le s(y,\mu) \).     
+  \item For each \( e,y,\mu \), if \( \mu^{x} \phi_{e}(x,y\mu)<s(y,\mu) \) then 
+\( \phi_{e'}(\cdot,y,\mu)=\phi_{e}(\cdot,y,\mu) \).
+ \end{alphenum}
+ \end{theorem}
+This theorem generalizes a theorem of Hoyrup and Rojas (in allowing a lower
+semicomputable upper bound \( s(y,\mu) \)).
+
+\begin{formalization}
+Planned, with $\bX$ one of our two spaces and $\bY = \dS$, extended in Section 4.5 to the
+conditions of Definition~\ref{our:m-cond}; the counting measure on $\dS$ may replace $\mu^{x}$,
+which gives $\m(x \mvert \mu)$. The enumeration $\phi_{e}$ is indexed by codes of computably
+enumerable sets of basic sets. G\'acs's proof works as written once Theorem~\ref{our:lsc-props}(b)
+supplies the functions $h_{e,i}$, whose integrals $\mu^{x}h_{e,i}(x,y,\mu)$ are computable from a
+name of $\mu$. Without a measure argument this is
+the trimming formalized for Chapter 1 (\texttt{truncG} in
+\texttt{exists\_lsc\_semimeasure\_family}) and, under the constraints of a continuous
+semimeasure, for Theorem~2.3.5 in Chapter 2 (\texttt{ContTrim.lean}).
+\end{formalization}
+ \begin{proof}
+  \proves{thm:trim}
+  \uses{our:lsc-props, thm:univsem, thm:g2.3.5}
+By Proposition~B.1.38, we can represent \( \phi_{e}(x,y,\mu) \) 
+as a supremum 
+\( \phi_{e}=\sup_{i}h_{e,i} \) where \( h_{e,i}(x,y,\mu) \) is a computable function of
+\( e,i \) monotonically increasing in \( i \).
+Similarly, we can represent \( s(y,\mu) \) as a supremum \( \sup_{j}s_{j}(y,\mu) \)
+where \( s_{j}(y,\mu) \) is a computable function monotonically increasing in \( j \).
+The integral \( \mu^{x} h_{e,i}(x,y,\mu) \) is computable as a function of \( (y,\mu) \),
+in particular it is upper semicomputable.
+
+Define \( h'_{e,i,j}(x,y,\mu) \) as \( h_{e,i}(x,y,\mu) \) for all \( j,y,\mu \)
+with \( \mu^{x} h_{e,i}(x,y,\mu)<s_{j}(y,\mu) \), and 0 otherwise.
+Since \( s_{j}(y,\mu) \) is computable this 
+definition makes the function \( h'_{e,i,j}(x,y,\mu) \) lower semicomputable.
+The function \( h''_{e,i}(x,y,\mu)=\sup_{j}h'_{e,i,j}(x,y,\mu) \) is then also lower
+semicomputable, with \( h''_{e,i}(x,y,\mu)\le h_{e,i}(x,y,\mu) \),
+and \( \mu^{x} h'_{e,i}(x,y,\mu)\le s(y,\mu) \).
+Also, \( h''_{e,i}(x,y,\mu) \) is monotonically increasing in \( i \).
+The function \( \phi'_{e}(x,y,\mu)=\sup_{i}h''_{e,i}(x,y,\mu) \) is then also lower
+semicomputable, and by Fubini's theorem we have
+\( \mu^{x}\phi'_{e}(x,y,\mu)\le s(y,\mu) \).
+
+Define \( \phi_{e'}(x,y,\mu)=\phi'_{e}(x,y,\mu) \).
+Consider any \( e,y,\mu \) such that \( \mu^{x}\phi_{e}(x,y,\mu)<s(y,\mu) \) holds.
+Then for every \( i \) there is a \( j \) with \( \mu^{x}h_{e,i}(x,y,\mu)<s_{j}(y,\mu) \),
+and hence \( h'_{e,i,j}(x,y,\mu)=h_{e,i}(x,y,\mu) \).
+It follows that \( h''_{e,i}(x,y,\mu)=h_{e,i}(x,y,\mu) \) for all \( i \) and hence
+\( \phi'_{e}(x,y,\mu)=\phi_{e}(x,y,\mu) \).
+ \end{proof}
+
+% Gacs source line 5074
+\begin{corollary}[Uniform extension]\label{coroll:trim}
+  \uses{def:mu-test}
+There is an operation \( H_{e}(x,\mu)\mapsto H_{e'}(x,\mu) \) with the property
+that \( H_{e'}(x,\mu) \) is a uniform test and if \( 2 H_{e}(\cdot,\mu) \) is a \( \mu \)-test
+then \( H_{e'}(x,\mu)=H_{e}(x,\mu) \).
+\end{corollary}
+ \begin{proof}
+  \proves{coroll:trim}
+  \uses{thm:trim}
+In Theorem~\ref{thm:trim} set \( \phi_{e}(x,y,\mu)=\frac{1}{2}H_{e}(x,\mu) \) with
+\( s(y,\mu)=1 \).
+ \end{proof}
+
+% Gacs source line 5084
+\begin{corollary}[Universal generalized test]\label{coroll:trim-univ}
+  \uses{our:lsc}
+Let \( s:\bY\times\cM(\bX)\to\ol\dR_{+} \) a lower semicomputable
+function.
+Let \( E \) be the set of 
+lower semicomputable functions \( \phi(x,y,\mu)\ge 0 \) with
+\( \mu^{x}\phi(x,y,\mu)\le s(y,\mu) \).
+There is a function \( \psi\in E \) that is \emph{optimal} in the sense
+that for all \( \phi\in E \) there is a constant \( c_{\phi} \) with 
+\( \phi\le 2c_{\phi}\psi \).
+\end{corollary}
+ \begin{proof}
+  \proves{coroll:trim-univ}
+  \uses{thm:trim}
+Apply the operation \( e\mapsto e' \) of theorem~\ref{thm:trim} to the sequence
+\( \phi_{e}(x,y,\mu) \) (\( e=1,2,\dots \)) of all lower semicomputable
+functions of \( x,y,\mu \).
+The elements of the sequence \( \phi'_{e}(x,y,\mu) \), \( e=1,2,\dots \)  are in \( E \) and
+and the sequence \( 2\phi'_{e}(x,y,\mu) \), \( e=1,2,\dots \) contains all
+elements of \( E \).
+Hence 
+the function \( \psi(x,y,\mu)=\sum_{e=1}^{\infty}2^{-e} \phi'_{e}(x,y,\mu) \) is in
+\( E \) and has the optimality property.
+ \end{proof}
+
+% Gacs source line 5106
+ \begin{definition}
+  \label{def:g4.1.4}
+  \uses{def:mu-test}
+A uniform test \( u \) is called \df{universal} if for every other test \( t \) there
+is a constant \( c_{t}>0 \) such that for all \( x,\mu \) we have \( t_{\mu}(x) \le c u_{\mu}(x) \). 
+ \end{definition}
+
+% Gacs source line 5111
+\begin{theorem}[Universal test,\cite{HoyrupRojasRandomness09}]
+  \label{thm:g4.1.2}
+  \uses{def:g4.1.4, thm:univ-integrable-test, thm:univ-integrable-test-seq}
+There is a universal uniform test.
+\end{theorem}
+
+\begin{formalization}
+Planned. Over $\dS$ the universal test can be taken to be $\m(x \mvert \mu)/\mu(x)$, and its
+universality is Theorem~\ref{thm:test-charac-discr}, as Chapter 2 did for a computable $P$
+(\texttt{canonicalIntegrableTest\_isUniversal}); only the existence of $\m(x \mvert \mu)$ needs
+trimming. Over $\dB^{\dN}$ the trimming of Theorem~\ref{thm:trim} is needed: Chapter 2's explicit
+universal test (\texttt{canonicalSeqTest\_isUniversal}) has no counterpart for noncomputable
+$\mu$, since Proposition~\ref{propo:test-charac-seq-lb} gives only one inequality.
+\end{formalization}
+ \begin{proof}
+  \proves{thm:g4.1.2}
+  \uses{coroll:trim-univ}
+This is a special case of Corollary~\ref{coroll:trim-univ} with \( s(y,\mu)=1 \).
+ \end{proof}
+
+% Gacs source line 5118
+\begin{definition}
+  \label{def:g4.1.5}
+  \uses{thm:g4.1.2}
+Let us fix a universal uniform test, called \( \t_{\mu}(x) \).
+An element \( x\in X \) is called \df{random} with respect to measure
+\( \mu\in\cM(\bX) \) if \( \t_{\mu}(x)<\infty \).
+
+The \df{deficiency of randomness} is defined as \( \d_{\mu}(x) = \log\t_{\mu}(x) \).
+\end{definition}
+
+If the space is discrete then typically all elements are random with respect to
+\( \mu \), but they will still be distinguished according to their different values
+of \( \d_{\mu}(x) \).
+
+\subsection{Sequences}
+
+Let our computable metric space \( \bX=(X,d,D,\ag) \) be the Cantor space
+of Example~B.1.35.2:
+the set of sequences over a (finite or countable) alphabet \( \Sg^{\dN} \).
+We may want to measure the non-randomness of finite sequences, viewing them
+as initial segments of infinite sequences.
+Take the universal test \( \t_{\mu}(x) \).
+For this, it is helpful to apply the representation of
+Proposition~B.1.23, taking into account that adding
+the extra parameter \( \mu \) does not change the validity of the theorem:
+
+% Gacs source line 5142
+ \begin{proposition}\label{propo:finite-test}
+  \uses{def:g4.1.5, our:lsc-props}
+There is a function
+\( g:\cM(\bX)\times\Sg^{*}\to\ol\dR_{+} \) 
+with \( \t_{\mu}(\xi) = \sup_{n} g_{\mu}(\xi^{\le n}) \), and 
+with the following properties:
+ \begin{alphenum}
+  \item \( g \) is lower semicomputable.
+  \item \( v\prefix w \) implies \( g_{\mu}(v)\le g_{\mu}(w) \).
+  \item\label{i:extended.sum} For all integer \( n\ge 0 \) we have 
+\( \sum_{w\in\Sg^{n}}\mu(w)g_{\mu}(w) \le 1 \).
+ \end{alphenum}
+ \end{proposition}
+
+\begin{formalization}
+Planned. Tests over $\dB^{\dN}$ are given by prefix-monotone functions on strings from the start
+(Definition~\ref{def:mu-test}), so this is Theorem~\ref{our:lsc-props}(c) for $\t$, with (c) the
+level form of $\mu\t_{\mu}\le 1$, as in Chapter 2's \texttt{IsIntegrableSeqTest}.
+\end{formalization}
+The properties of the function \( g_{\mu}(w) \) clearly imply that 
+\( \sup_{n} g_{\mu}(\xi^{\le n}) \) is a uniform test.
+
+The existence of a universal function among the functions \( g \) can be proved by
+the usual methods:
+
+% Gacs source line 5160
+ \begin{proposition}\label{propo:finite-univ}
+  \uses{propo:finite-test, thm:trim, thm:g2.3.5}
+Among the functions \( g_{\mu}(w) \) satisfying the properties listed in
+Proposition~\ref{propo:finite-test}, there is one that
+dominates to within a multiplicative constant.
+ \end{proposition}
+
+\begin{formalization}
+Planned: trimming as in Theorem~\ref{thm:trim}, now to the constraints (c) at every level $n$,
+as Chapter 2 trims to the constraints of a continuous semimeasure (\texttt{ContTrim.lean}).
+\end{formalization}
+
+These facts motivate the following definition.
+
+% Gacs source line 5168
+ \begin{definition}[Extended test]\label{def:extended-test}
+  \uses{propo:finite-univ, def:g2.3.29}
+Over the Cantor space, we
+extend the definition of a universal test \( \t_{\mu}(x) \) to finite sequences
+as follows.
+We fix a function \( \t_{\mu}(w) \) with \( w\in\Sg^{*} \)
+whose existence is assured by~Proposition~\ref{propo:finite-univ}.
+For infinite sequences \( \xi \) we define 
+\( \t_{\mu}(\xi) = \sup_{n}\t_{\mu}(\xi^{\le n}) \).
+The test with values defined also on finite sequences will be called an
+\df{extended test}.
+ \end{definition}
+
+We could try to define extended tests also over arbitrary constructive
+metric spaces, extending them
+to the canonical balls, with the monotonicity property that
+\( \t_{\mu}(v)\le\t_{\mu}(w) \) if ball \( w \) is manifestly included in ball \( v \).
+But there is nothing simple and obvious corresponding to the 
+integral requirement~\eqref{i:extended.sum}.
+
+Over the space \( \Sg^{\dN} \) for a finite alphabet \( \Sg \),
+an extended test could also be extracted directly from a test, 
+using the following formula (as observed by Vyugin and Shen).
+
+% Gacs source line 5191
+\begin{definition}\label{def:ol-u}
+  \uses{our:lsc-inf}
+ \begin{align*}
+   \ol\u(z) = \inf\setof{\u(\og) : \og\text{ is an infinite extension of } z}.
+ \end{align*}
+\end{definition}
+This function is lower semicomputable, by Proposition~B.1.31.
+
+\begin{formalization}
+Planned for $\Sg = \dB$ and uniformly in $\mu$; the lower semicomputability is
+Theorem~\ref{our:lsc-inf}(b).
+\end{formalization}
+
+
+\subsection{Conservation of randomness}
+
+For \( i=1,0 \), let
+\( \bX_{i} = (X_{i}, d_{i}, D_{i}, \ag_{i}) \) be computable metric spaces, 
+and let \( \bM_{i} = (\cM(\bX_{i}), \sg_{i}, \nu_{i}) \) 
+be the effective topological space of
+probability measures over \( \bX_{i} \).
+Let \( \Lg \) be a computable probability kernel from \( \bX_{1} \) to \( \bX_{0} \) as
+defined in Subsection~B.2.3.
+In the following theorem, the same notation \( \d_{\mu}(x) \) will
+refer to the deficiency of randomness with respect to two different spaces,
+\( \bX_{1} \) and \( \bX_{0} \), but this should not cause confusion.
+Let us first spell out the conservation theorem before interpreting it.
+
+% Gacs source line 5218
+ \begin{theorem}\label{propo:conservation}
+  \uses{def:g4.1.5, thm:g2.2.3}
+For a computable probability kernel \( \Lg \) from \( \bX_{1} \) to \( \bX_{0} \),
+we have 
+ \begin{equation}\label{eq:conservation}
+  \lg_{x}^{y} \t_{\Lg^{*}\mu}(y) \lem \t_{\mu}(x).
+ \end{equation}
+ \end{theorem}
+
+\begin{formalization}
+Planned for computable kernels from $\dS$ to $\dS$: Chapter 2's \texttt{ComputableTransition}
+($\lg_{x}(y)$ lower semicomputable, rows summing to 1), now with an arbitrary input measure
+$\mu$. This generalizes Theorem~2.2.3 (\texttt{transTest\_le\_canonical}), where $\mu$ is
+computable. That $u_{\mu}(x)$ is lower semicomputable is Theorem~\ref{our:lsc-props}(d). Kernels
+into or out of $\dB^{\dN}$ are not planned, except the deterministic ones of
+Corollary~\ref{coroll:conservation-determ}.
+\end{formalization}
+ \begin{proof}
+  \proves{propo:conservation}
+  \uses{thm:g4.1.2, our:lsc-props}
+Let \( \t_{\nu}(x) \) be the universal test over \( \bX_{0} \).
+The left-hand side of~\eqref{eq:conservation} can be written as
+ \[
+  u_{\mu} = \Lg \t_{\Lg^{*}\mu}.
+ \]
+According to~(A.2.4), we have 
+\( \mu u_{\mu} = (\Lg^{*}\mu) \t_{\Lg^{*}\mu} \) which is \( \le 1 \) since \( \t \) is
+a test.
+If we show that \( (\mu,x) \mapsto u_{\mu}(x) \) is lower semicomputable
+then the universality of \( \t_{\mu} \) will imply
+that \( u_{\mu} \lem \t_{\mu} \).
+
+According to Proposition~B.1.38, as
+a lower semicomputable function, \( \t_{\nu}(y) \) can be written as 
+\( \sup_{n} g_{n}(\nu, y) \), where \( (g_{n}(\nu, y)) \) is a computable sequence
+of computable functions.
+We pointed out in Subsection~B.2.3 that the function 
+\( \mu \mapsto \Lg^{*}\mu \) is computable.
+Therefore the function \( (n, \mu, x) \mapsto g_{n}(\Lg^{*}\mu, f(x)) \) 
+is also a computable.
+So, \( u_{\mu}(x) \) is the supremum of a computable sequence of computable
+functions and as such, lower semicomputable.
+ \end{proof}
+
+It is easier to interpret the theorem first in the special case when
+\( \Lg = \Lg_{h} \) for a computable function \( h : X_{1} \to X_{0} \),
+as in Example~B.2.12.
+Then the theorem simplifies to the following.
+
+% Gacs source line 5256
+ \begin{corollary}\label{coroll:conservation-determ}
+  \uses{propo:conservation, thm:simple-rand-cons-det}
+For a computable function \( h : X_{1} \to X_{0} \), we have
+\( \d_{h^{*}\mu}(h(x)) \lea \d_{\mu}(x) \).
+ \end{corollary}
+
+\begin{formalization}
+Planned for computable $h:\dS\to\dS$ (the kernel of Chapter 2's \texttt{detTransition}) and for
+computable $h:\dB^{\dN}\to\dB^{\dN}$, given by a monotone map on strings. In the second case
+$h^{*}\mu(w)$ is a finite sum of values of $\mu$, by compactness, and the proof of
+Theorem~\ref{propo:conservation} applies with level integrals. This generalizes
+Theorem~2.2.2 (\texttt{canonical\_pushforward\_le}, \texttt{det\_canonical\_image\_le}).
+\end{formalization}
+
+Informally, this says that if \( x \) is random with respect to \( \mu \) in
+\( \bX_{1} \) then \( h(x) \) is essentially at least as random with respect to the
+output distribution \( h^{*}\mu \) in \( \bX_{0} \).
+Decrease in randomness
+can only be caused by complexity in the definition of the function \( h \).
+
+Let us specialize the theorem even more:
+
+% Gacs source line 5270
+\begin{corollary}\label{coroll:conservation-pair}
+  \uses{coroll:conservation-determ}
+For a probability distribution \( \mu \) over the space \( X\times Y \)
+let \( \mu_{X} \) be its marginal on the space \( X \).
+Then we have
+ \begin{align*}
+   \d_{\mu_{X}}(x) \lea \d_{\mu}(\tup{x,y}).
+ \end{align*}
+\end{corollary}
+
+\begin{formalization}
+Planned over $\dS$, with pairs coded by \texttt{pairCode}, and over $\dB^{\dN}$, with pairs of
+sequences interleaved. In both cases the projection is a computable map, and this is
+Corollary~\ref{coroll:conservation-determ} for it.
+\end{formalization}
+
+This says, informally, that if a pair is random then each of its elements is
+random (with respect to the corresponding marginal distribution).
+
+In the general case of the theorem, concerning random transitions,
+we cannot bound the randomness of each outcome uniformly.
+The theorem asserts that the average nonrandomness, as measured by 
+the universal test with respect to the output distribution, does not
+increase.
+In logarithmic notation:
+\( \lg_{x}^{y} 2^{\d_{\Lg^{*}\mu}(y)} \lea \d_{\mu}(x) \), 
+or equivalently, 
+\( \int 2^{\d_{\Lg^{*}\mu}(y)} \lg_{x}(dy) \lea \d_{\mu}(x) \).
+
+% Gacs source line 5292
+ \begin{corollary}
+  \label{cor:g4.1.12}
+  \uses{propo:conservation, cor:g2.2.8}
+Let \( \Lg \) be a computable probability kernel from \( \bX_{1} \) to \( \bX_{0} \).
+There is a constant \( c \) such that
+for every \( x\in\bX^{1} \), and integer \( m > 0 \) we have 
+ \[
+ \lg_{x}\setof{y : \d_{\Lg^{*}\mu}(y) > \d_{\mu}(x) + m + c} \le 2^{-m}.
+ \]
+ \end{corollary}
+
+\begin{formalization}
+Planned for the kernels of Theorem~\ref{propo:conservation}. As in Chapter 2's
+Corollary~2.2.8 (\texttt{transition\_deficiency\_tail}), it follows by Markov's inequality.
+\end{formalization}
+
+Thus, in a computable random transition,
+the probability of an increase of randomness deficiency by
+\( m \) units (plus a constant \( c \)) is less than \( 2^{-m} \).
+The constant \( c \) comes from the description complexity 
+of the transition \( \Lg \).
+
+A randomness conservation result related to 
+Corollary~\ref{coroll:conservation-determ} was proved 
+in~\cite{HertlingWeihrauchRand98}.
+There, the measure over the space \( \bX_{0} \) is not the output
+measure of the transformation, but is assumed to
+obey certain inequalities related to the transformation.
+
+
+\section{Test for a class of measures}
+
+\subsection{From a uniform test}
+
+A Bernoulli measure is what we get by tossing a (possibly biased) coin
+repeatedly.
+
+% Gacs source line 5322
+\begin{definition}
+  \label{def:g4.2.1}
+  \uses{our:measure}
+Let \( X=\dB^{\dN} \) be the set of infinite binary sequences, with the usual
+sequence topology.
+Let \( B_{p} \) be the measure on \( X \) that corresponds to tossing a coin
+independently with probability \( p \) of success: it is called the \df{Bernoulli}
+measure with parameter \( p \).
+Let \( \cB \) denote the set of all Bernoulli measures. 
+\end{definition}
+
+\begin{formalization}
+Planned: $B_{p}(w) = p^{k}(1-p)^{n-k}$ for a string $w$ of length $n$ with $k$ ones, a measure over
+$\dB^{\dN}$ in the sense of Definition~\ref{our:measure}, computable in $(w,p)$.
+\end{formalization}
+
+Given a sequence \( x\in X \) we may ask the question whether \( x \) is random with
+respect to at least \emph{some} Bernoulli measure.
+(It can clearly not be random with respect to two different Bernoulli measures
+since if \( x \) is random with respect to \( B_{p} \) then its relative frequencies
+converge to \( p \).)
+This idea suggests two possible definitions for a test of the property of
+``Bernoulliness'': 
+ \begin{enumerate}
+  \item We could define \( \t_{\cB}(x) = \inf_{\mu\in\cB}(x) \).
+  \item We could define the notion of a Bernoulli test as a lower semicomputable
+    function \( f(x) \) with the property \( B_{p} f\le 1 \) for all \( p \).
+ \end{enumerate}
+We will see that in case of this class of measures the two definitions lead to
+essentially the same test.
+
+Let us first extend the definition to more general sets of measures, still
+having a convenient property.
+ 
+% Gacs source line 5349
+ \begin{definition}[Class tests]\label{def:C-test}
+  \uses{def:mu-test, our:lsc}
+Consider a class \( \cC \) of measures that is effectively
+compact in the sense of Definition~B.1.27 or (equivalently
+for metric spaces) in the sense of Theorem~B.1.1.
+A lower semicomputable function \( f(x) \) is called a \( \cC \)-\df{test} if for all
+\( \mu\in\cC \) we have \( \mu f\le 1 \).
+It is a \df{universal} \( \cC \)-\df{test} if it dominates all other \( \cC \)-tests to
+within a multiplicative constant.
+\end{definition}
+
+\begin{formalization}
+Planned for classes that are computable images $\cC = \setof{\mu_{p} : p\in\clint{0}{1}}$ of the
+unit interval, that is with $(w,p)\mapsto\mu_{p}(w)$ computable. These include $\cB$ and the
+Markov chain classes of Example~\ref{ex:g4.2.9}, and they are effectively compact by
+Proposition B.1.32; the plan uses no other kind of class. General effectively compact classes of
+measures are out of scope.
+\end{formalization}
+
+% Gacs source line 5359
+\begin{example}
+  \label{ex:g4.2.3}
+It is easy to show that the class \( \cB \) is effectively compact.
+One way is to appeal to the general theorem in
+Proposition~B.1.32 saying that applying a computable
+function to an effectively compact set (in this case the interval
+\( \clint{0}{1} \)), the image is also an effectively compact set.
+\end{example}
+
+For the case of infinite sequences, we can also define extended tests.
+
+% Gacs source line 5369
+ \begin{definition}[Extended class test]
+  \label{def:g4.2.4}
+  \uses{def:C-test, def:extended-test}
+Let our space \( \bX \) be the Cantor space of infinite sequences \( \Sg^{\dN} \).
+Consider a class \( \cC \) of measures that is effectively
+compact in the sense of Definition~B.1.27 or (equivalently
+for metric spaces) in the sense of Theorem~B.1.1.
+A lower semicomputable function \( f:\Sg^{*}\to\ol\dR_{+} \) 
+is called an \df{extended} \( \cC \)-\df{test} if it is monotonic with respect to
+the prefix relation and for all \( \mu\in\cC \) and integer \( n\ge 0 \) we have 
+ \begin{align*}
+  \sum_{x\in\Sg^{n}}\mu(x) f(x) \le 1.   
+ \end{align*}
+It is \df{universal} if it dominates all other extended \( \cC \)-tests to
+within a multiplicative constant.
+\end{definition}
+
+The following observation is immediate.
+
+% Gacs source line 5386
+ \begin{proposition}
+  \label{prop:g4.2.5}
+  \uses{def:g4.2.4, our:lsc-props}
+A function \( f:\Sg^{\dN}\to\ol\dR_{+} \) is a class test if and only if it can be
+represented as \( \lim_{n}g(\xi^{\le n}) \) where \( g(x) \) is an extended class test.
+ \end{proposition}
+
+\begin{formalization}
+Planned: Theorem~\ref{our:lsc-props}(c) and monotone convergence, as in Chapter 2
+(\texttt{seqVal}).
+\end{formalization}
+
+The following theorem defines a universal \( \cC \)-test.
+
+% Gacs source line 5394
+ \begin{theorem}
+  \label{thm:g4.2.1}
+  \uses{def:C-test, def:g4.1.5}
+Let \( \t_{\mu}(x) \) be a universal uniform test.
+Then \( \u(x) = \inf_{\mu\in\cC}\t_{\mu}(x) \) defines a universal \( \cC \)-test.
+ \end{theorem}
+
+\begin{formalization}
+Planned for the classes of Definition~\ref{def:C-test}; the infimum is lower semicomputable by
+Theorem~\ref{our:lsc-inf}(a).
+\end{formalization}
+ \begin{proof}
+  \proves{thm:g4.2.1}
+  \uses{coroll:trim, our:lsc-inf}
+Let us show first that \( \u(x) \) is a \( \cC \)-test.
+It is lower semicomputable according to Proposition~B.1.31.
+Also, for each \( \mu \) we have \( \mu\u \le \mu \t_{\mu} \le 1 \), showing that
+\( \u(x) \) is a \( \cC \)-test.
+
+Let us now show that it is universal.
+Let \( f(x) \) be an arbitrary \( \cC \)-test.
+By Corollary~\ref{coroll:trim} there is a uniform test \( g_{\mu}(x) \) such that for
+all \( \mu\in\cC \) we have \( g_{\mu}(x)=f(x)/2 \).
+It follows from the universality of the uniform test \( \t_{\mu}(x) \)
+that \( f(x) \lem g_{\mu}(x) \lem\t_{\mu}(x) \) for all \( \mu\in\cC \).
+But then \( f(x) \lem\inf_{\mu\in\cC}\t_{\mu}(x) = \u(x) \).
+ \end{proof}
+
+For the case of sequences, the same statement can be made for extended tests.
+(This is not completely automatic since a test is obtained from an
+extended test via a supremum, on the other hand a class test is obtained,
+according the theorem above, via an infimum.)
+
+
+\subsection{Typicality and class tests}
+
+The set of Bernoulli measures has an important property shared by many
+classes considered in practice: namely that random sequences determine the
+measure to which it belongs.
+
+% Gacs source line 5426
+ \begin{definition}
+  \label{def:g4.2.6}
+  \uses{def:C-test}
+Consider a class \( \cC \) of measures over a computable metric space
+\( \bX = (X,d,D,\ag) \).
+We will say that a lower semicomputable function
+ \begin{align*}
+  \s:X\times\cC\to\ol\dR_{+}
+ \end{align*}
+is a \df{separating test} for \( \cC \) if 
+\begin{itemize}
+\item \( \s_{\mu}(\cdot) \) is a test for each \( \mu\in\cC \).
+\item If \( \mu\ne\nu \) then
+\( \s_{\mu}(x)\lor\s_{\nu}(x)=\infty \) for all \( x\in X \).
+\end{itemize}
+Given a separating test \( \s_{\mu}(x) \) we call an element \( x \)
+\df{typical} for \( \mu\in\cC \) if \( \s_{\mu}(x)<\infty \).
+ \end{definition}
+
+A typical element determines uniquely the measure \( \mu \) for which
+it is typical.
+Note that if a separating tests exists for a class then any two different
+measures \( \mu_{1},\mu_{2} \) in the class are orthogonal to each other, that is there are
+disjoint measureable sets \( A_{1},A_{2} \) with \( \mu_{j}(A_{j})=1 \).
+Indeed, let \( A_{j}=\setof{x:s_{\mu_{j}}(x)<\infty} \).
+
+Let us show a nontrivial example: the class of \( \cB \) of Bernoulli measures.
+Recall that by Chebyshev's inequality we have
+ \begin{align*}
+   B_{p}(\setof{x\in\dB^{n}: |\sum_{i}x(i)-n p|\ge\lg n^{1/2}(p(1-p))^{1/2}}) \le \lg^{-2}.
+ \end{align*}
+Since \( p(1-p)\le 1/4 \), this implies
+ \begin{align*}
+   B_{p}(\setof{x\in\dB^{n}: |\sum_{i}x(i)-n p>\lg n^{1/2}/2}) < \lg^{-2}.
+ \end{align*}
+Setting \( \lg=n^{0.1} \) and ignoring the factor \( 1/2 \) gives
+ \begin{align*}
+   B_{p}(\setof{x\in\dB^{n}: |\sum_{i}x(i)-n p|> n^{0.6}})< n^{-0.2}.
+ \end{align*}
+Setting \( n=2^{k} \):
+ \begin{align}\label{eq:2^k-Cheb}
+   B_{p}(\setof{x\in\dB^{2^{k}}: |\sum_{i}x(i)-2^{k}p|> 2^{0.6 k}})< 2^{-0.2k}.
+ \end{align}
+
+Now, for the example.
+
+\begin{example}\label{example:Bernoulli-sep}
+For a sequence \( \xi \) in \( \bB^{\dN} \), and for \( p\in\clint{0}{1} \) let
+ \begin{align*}
+   g_{p}(x) = g_{B_{p}}(x) = \sup\setof{k: |\sum_{i=1}^{2^{k}}\xi(i)-2^{k}p|> 2^{0.6k}}.
+ \end{align*}
+Then we have
+ \begin{align*}
+   B_{p}^{\xi}g_{p}(\xi) \le \sum_{k} k\cdot 2^{-0.2 k} = c<\infty
+ \end{align*}
+for some constant \( c \), so \( \s_{p}(\xi)=g_{p}(x)/c \) is a test for each \( p \).
+The property \( \s_{p}(\xi)<\infty \) implies that \( 2^{-k}\sum_{i=1}^{2^{k}}\xi(i) \)
+converges to \( p \).
+For a given \( \xi \) this is impossible for both \( p \) and \( q \) for \( p\ne q \), hence
+\( \s_{p}(\xi)\lor\s_{q}(\xi)=\infty \).
+\end{example}
+
+The following structure theorem gives considerable insight.
+
+% Gacs source line 5488
+\begin{theorem}\label{thm:test-sep}
+  \uses{def:g4.2.6, thm:g4.2.1}
+Let \( \cC \) be an effectively compact class of measures,
+let \( \t_{\mu}(x) \) be the universal uniform test and
+let \( \t_{\cC}(x) \) be a universal class test for \( \cC \).
+Assume that a separating test \( \s_{\mu}(x) \) exists for \( \cC \).
+Then we have the representation
+ \begin{align*}
+  \t_{\mu}(x) \eqm \t_{\cC}(x)\lor \s_{\mu}(x)
+ \end{align*}
+for all \( \mu\in\cC \), \( x\in X \).
+\end{theorem}
+
+\begin{formalization}
+Planned, with the Bernoulli instance: the separating test of Example~\ref{example:Bernoulli-sep}
+rests on Chebyshev's inequality~\eqref{eq:2^k-Cheb} and is lower semicomputable in $(\xi,p)$, since its
+condition on $p$ is a strict inequality.
+\end{formalization}
+ \begin{proof}
+  \proves{thm:test-sep}
+  \uses{coroll:trim, thm:g4.2.1}
+First, we have \( \t_{\cC}(x)\lor\s_{\mu}(x) \lem \t_{\mu}(x) \).
+Indeed as we know from the Uniform Extension Corollary~\ref{coroll:trim}, we can
+extend \( \s_{\mu}(x)/2 \) to a uniform test, hence \( \s_{\mu}(x)\lem \t_{\mu}(x) \).
+Also by definition \( \t_{\cC}(x)\le \t_{\mu}(x) \).
+
+On the other hand, let us show \( \t_{\cC}(x)\lor\s_{\mu}(x) \ge \t_{\mu}(x) \).
+Suppose first that 
+\( x \) is not random with respect to any \( \nu\in\cC \): then \( \t_{\cC}(x)=\infty \).
+Suppose now that \( x \) is random with respect to some \( \nu\in\cC \), 
+\( \nu\ne\mu \).
+Then \( \s_{\mu}(x)=\infty \).
+Finally, suppose \( \t_{\mu}(x)<\infty \).
+Then \( \t_{\nu}(x)=\infty \) for all \( \nu\in\cC \), \( \nu\ne\mu \), hence
+\( \t_{\cC}(x) = \inf_{\nu\in\cC}\t_{\nu}(x) = \t_{\mu}(x) \), so
+the inequality holds again.
+ \end{proof}
+
+The above theorem separates the randomness test into two parts.
+One part tests randomness with respect to the class \( \cC \), the other one tests
+typicality with respect to the measure \( \mu \).
+In the Bernoulli example,
+ \begin{itemize}
+  \item Part \( \t_{\cB}(\xi) \) checks ``Bernoulliness'', that is independence.
+It encompasses all the irregularity criteria.
+  \item Part \( \s_{p}(\xi) \) checks
+(crudely) for the law of large numbers: whether relative frequency converges
+(fast) to \( p \).
+ \end{itemize}
+If the independence of the sequence is taken for granted, we may assume that
+the class test is satisfied.
+What remains is typicality testing, which is similar to 
+ordinary statistical parameter testing.
+
+% Gacs source line 5533
+ \begin{remarks}
+  \label{rem:g4.2.8}
+   \begin{enumerate}
+   \item 
+Separation is the only requirement of the test \( \s_{\mu}(x) \),
+otherwise, for example in the Bernoulli test case,
+no matter how crude the convergence criterion expressed by
+\( \s_{\mu}(x) \), the maximum \( \t_{\cC}(x)\lor\s_{\mu}(x) \) 
+is always (essentially) the same universal test.
+  \item
+Though the convergence criterion can be crude, but one still seems to need some
+kind of constructive convergence of the relative frequencies if the separation
+test is to be defined in terms of relative frequency convergence.
+   \end{enumerate}
+ \end{remarks}
+
+% Gacs source line 5548
+ \begin{example}
+  \label{ex:g4.2.9}
+For \( \eps>0 \) let \( P(\eps) \) be the Markov chain \( X_{1},X_{2},\dots \)
+with set of states \( \{0,1\} \),
+with transition probabilities \( T(0,1)=T(1,0)=\eps \) and \( T(0,0)=T(1,1)=1-\eps \),
+and with \( P\evof{X_{1}=0}=P\evof{X_{1}=1}=1/2 \).
+Let \( \cC(\dg) \) be the class of all \( P(\eps) \) with \( \eps\ge\dg \).
+For each \( \dg>0 \), this is an effectively compact class, and a separating test is easy to
+construct since an effective law of large numbers holds for these Markov
+chains. 
+
+We can generalize to the set of \( m \)-state stationary Markov chains whose 
+eigenvalue gap is \( \ge\eps \).
+ \end{example}
+
+This example is in contrast to V'yugin's example~\cite{VyuginErgodic98}
+showing that, in the nonergodic case,
+in general no recursive speed of convergence can be guaranteed in the
+Ergodic Theorem (which is the appropriate generalization of the law of large
+numbers)\footnote{This paper of Vyugin also shows that though there is no recursive speed of
+convergence, a certain constructive 
+proof of the pointwise ergodic theorem still gives rise to a test of
+randomness.}.
+
+We can show that if a computable Markov chain is ergodic then
+its law of large numbers \emph{does} have a constructive speed of convergence.
+Hopefully, this observation can be extended to some interesting 
+compact classes of ergodic processes.
+
+
+\subsection{Martin-L\"of's approach}
+
+Martin-L\"of also gave a definition of Bernoulli tests in~\cite{MLof66art}.
+For its definition let us introduce the following notation.
+
+ \begin{notation} The set of sequences with a given frequency of 1's will be
+   denoted as follows:
+ \begin{align*}
+   \dB(n,k) = \setof{x\in\dB^{n}: \sum_{i}x(i)=k}.
+ \end{align*}
+ \end{notation}
+
+Martin-L\"of's definition translates to the integral constraint version as follows:
+
+% Gacs source line 5591
+ \begin{definition}\label{def:combinat-Bernoulli}
+  \uses{def:semicomputability}
+Let \( X=\dB^{\dN} \) be the set of infinite binary sequences with the usual
+metrics.
+A \df{combinatorial Bernoulli test} is a function
+\( f:\dB^{*}\to\ol\dR_{+} \) with the following constraints:
+ \begin{alphenum}
+  \item It is lower semicomputable.
+  \item It is monotonic with respect to the prefix relation.
+  \item For all \( 0\le k\le n \) we have
+ \begin{align}\label{eq:combinat-Bernoulli-sum}
+      \sum_{x\in\dB(n,k)} f(x) \le \binom{n}{k}.
+ \end{align}
+ \end{alphenum}
+ \end{definition}
+
+\begin{formalization}
+Planned, on strings only: Chapter 2's unary lower semicomputability and \texttt{IsMonoStr}; the
+sum over $\dB(n,k)$ is finite.
+\end{formalization}
+
+The following observation is useful.
+
+% Gacs source line 5608
+ \begin{proposition}\label{propo:Bernoulli-extend}
+  \uses{def:combinat-Bernoulli}
+If a combinatorial Bernoulli test \( f(x) \) is given on strings \( x \)
+of length less than \( n \), then extending it to longer strings using 
+monotonicity we get a function that is still a combinatorial Bernoulli test.
+ \end{proposition}
+ \begin{proof}
+  \proves{propo:Bernoulli-extend}
+It is sufficient to check the relation~\eqref{eq:combinat-Bernoulli-sum}.
+We have (even for \( k=0 \), when \( \dB(n-1,k-1)=\emptyset \)):
+ \begin{align*}
+  \sum_{x\in\dB(n,k)} f(x) &\le
+  \sum_{y\in\dB(n-1,k-1)}f(y)+\sum_{y\in\dB(n-1,k)} f(y) 
+\\ &\le \binom{n-1}{k-1} + \binom{n-1}{k} = \binom{n}{k}.
+ \end{align*}
+ \end{proof}
+
+The following can be shown using standard methods:
+  
+% Gacs source line 5625
+ \begin{proposition}[Universal combinatorial Bernoulli test]
+  \label{prop:g4.2.13}
+  \uses{def:combinat-Bernoulli, propo:Bernoulli-extend, thm:univsem}
+There is a universal combinatorial Bernoulli test \( f(x) \), that is a combinatorial
+Bernoulli test with the property that for every
+combinatorial Bernoulli test \( h(x) \) there is a constant \( c_{h}>0 \) such that for
+all \( x \) we have \( h(x) \le c_{h} g(x) \).
+ \end{proposition}
+
+\begin{formalization}
+Planned, by the standard method: trim every enumerated lower semicomputable function stage by
+stage to the constraints~\eqref{eq:combinat-Bernoulli-sum} on strings of the current length, extend it to longer strings by
+monotonicity (Proposition~\ref{propo:Bernoulli-extend}), and mix with weights $2^{-e}$, as
+Chapter 1 trims to $\sum\le 1$.
+\end{formalization}
+
+% Gacs source line 5632
+\begin{definition}
+  \label{def:g4.2.14}
+  \uses{prop:g4.2.13, thm:g4.2.1}
+Let us fix a universal combinatorial Bernoulli test \( b(x) \) and extend it to
+infinite sequences \( \xi \) by
+ \begin{align*}
+   b(\xi) = \sup_{n} b(\xi^{\le n}).
+ \end{align*}
+Let \( \t_{\cB}(\xi) \) be a universal class test for Bernoulli measures, for
+\( \xi\in\dB^{\dN} \).
+\end{definition}
+
+Let us show that the general class test for Bernoulli measures and
+Martin-L\"of's Bernoulli test yield the same random sequences.
+
+% Gacs source line 5645
+ \begin{theorem}\label{thm:combinat-Bernoulli}
+  \uses{def:g4.2.14}
+With the above definitions, we have \( b(\xi) \eqm \t_{\cB}(\xi) \).
+In words: a sequence is nonrandom with respect to all Bernoulli measures if and
+only if it is rejected by a universal combinatorial Bernoulli test.
+ \end{theorem}
+
+\begin{formalization}
+Planned. The estimate~\eqref{eq:Bernoulli-estim-1} and $(N/(N-n))^{n}\le e^{2}$ are elementary real analysis.
+\end{formalization}
+ \begin{proof}
+  \proves{thm:combinat-Bernoulli}
+  \uses{def:g4.2.4, prop:g4.2.5, prop:g4.2.13, propo:Bernoulli-extend}
+We first show \( b(\xi)\le \t_{\cB}(\xi) \).
+Moreover, we show that \( b(x) \) is an extended
+class test for the class of Bernoulli measures.
+We only need to check the sum condition, namely that for all
+\( 0\le p \le 1 \), and all \( n>0 \) the inequality
+\( \sum_{x\in\dB^{n}}B_{p}(x)b(x) \le 1 \) holds.
+Indeed, we have
+ \begin{align*}
+ \sum_{x\in\dB^{n}}B_{p}(x)f(x)
+     &= \sum_{k=0}^{n}p^{k}(1-p)^{n-k}\sum_{x\in\dB(n,k)}f(x)
+\\  &\le \sum_{k=0}^{n}p^{k}(1-p)^{n-k}\binom{n}{k} = 1.
+ \end{align*}
+On the other hand, let \( f(x)=\t_{\cB}(x) \), \( x\in\dB^{*} \)
+be the extended test for \( \t_{\cB}(\xi) \).
+For all integers \( N>0 \) let \( n = \flo{\sqrt{N/2}} \).
+Then as \( N \) runs through the integers, \( n \) also runs through all integers.
+For \( x\in\dB^{N} \) let \( F(x)=f(x^{\le n}) \).
+Since \( f(x) \) is lower semicomputable and monotonic with respect to the prefix
+relation, this is also true of \( F(x) \).
+
+We need to estimate \( \sum_{x\in\dB(N,K)} F(x) \).
+For this, note that for \( y\in\dB(n,k) \) we have
+ \begin{align}\label{eq:hyper}
+   \card{\setof{x\in\dB(N,K):y\prefix x}} = \binom{N-n}{K-k}.
+ \end{align}
+Now for \( 0\le K\le N \) we have
+ \begin{equation}\label{eq:Bernoulli-estim}
+ \begin{aligned}
+      \sum_{x\in\dB(N,K)} F(x) &= 
+     \sum_{y\in\dB^{n}}f(y)\card{\setof{x\in\dB(N,K):y\prefix x}}
+\\ &= \sum_{k=0}^{n}\binom{N-n}{K-k}\sum_{y\in\dB(n,k)}f(y).
+ \end{aligned}\end{equation}
+Let us estimate \( \binom{N-n}{K-k}\big/\binom{N}{K} \).
+If \( K=k=0 \) then this is 1.
+If \( k=n \) then it is \( \frac{K\dotsm(K-n+1)}{N\dotsm(N-n+1)} \).
+Otherwise, using \( p=K/N \):
+\begin{align}\nonumber
+\frac{\binom{N-n}{K-k}}{\binom{N}{K}}
+ &= \frac{(N-n)(N-n-1)\dotsm(N-K-(n-k)+1)/(K-k)!}{N(N-1)\dotsm(N-K+1)/K!}
+\\\nonumber  &= \frac{K\dotsm(K-k+1)\cdot(N-K)\dotsm(N-K-(n-k)+1)}{N\dotsm(N-n+1)}.
+\\\label{eq:Bernoulli-estim-1}
+  &\le \frac{K^{k}(N-K)^{n-k}}{(N-n)^{n}} = p^{k}(1-p)^{n-k}\Paren{\frac{N}{N-n}}^{n}.
+ \end{align}
+Thus in all cases the estimate
+ \begin{align*}
+\binom{N-n}{K-n}\bigg/\binom{N}{K} \le p^{k}(1-p)^{n-k}\Paren{\frac{N}{N-n}}^{n}
+ \end{align*}
+holds.
+We have
+ \begin{align*}
+\Paren{\frac{N}{N-n}}^{n} =\Paren{1+\frac{n}{N-n}}^{n}
+  \le e^{\frac{N}{2(N-n)}} \le e^{2},
+ \end{align*}
+since we assumed \( 2n^{2}\le N \).
+Substituting into~\eqref{eq:Bernoulli-estim} gives
+ \begin{align*}
+  \sum_{x\in\dB(N,K)} F(x)
+  &\le e^{2}\sum_{k=0}^{n}p^{k}(1-p)^{n-k}\sum_{y\in\dB(n,k)}f(y) \le e^{2},
+ \end{align*}
+since \( f(x) \) is an extended class test for Bernoulli measures.
+It follows that \( e^{-2}F(x)\lem b(x) \), hence also \( F(x) \lem b(x) \).
+But we have \( \t_{\cC}(\xi)=\sup_{n}f(\xi^{\le n}) = \sup_{n}F(\xi^{\le n}) \), hence
+\( \t_{\cC}(\xi) \lem b(\xi) \).
+ \end{proof}
+
+
+\section{Neutral measure}\label{sec:neutral}
+
+Let \( \t_{\mu}(x) \) be our universal uniform randomness test.
+We call a measure \( M \) \df{neutral} if
+\( \t_{M}(x) \le 1 \) for all \( x \).
+If \( M \) is neutral then no experimental outcome \( x \) could 
+refute the theory (hypothesis, model)
+that \( M \) is the underlying measure to our experiments.
+It can be used as ``apriori probability'', in a Bayesian approach to
+statistics.
+Levin's theorem says the following:
+
+% Gacs source line 5729
+ \begin{theorem}\label{thm:neutral-meas}
+  \notready
+  \uses{def:g4.1.5}
+If the space \( \bX \) is compact then there is a neutral measure over \( \bX \).
+ \end{theorem}
+ The proof relies on a nontrivial combinatorial fact,
+Sperner's Lemma, which also underlies the proof of the Brouwer fixpoint
+theorem.
+Here is a version of Sperner's Lemma, spelled out in continuous form:
+
+
+\begin{formalization}
+Not planned. The proof needs the compactness of the space of measures over a compact space
+(Proposition A.2.50) and Sperner's lemma (Proposition~\ref{propo:Sperner}); both are outside the
+agreed scope.
+\end{formalization}
+% Gacs source line 5737
+ \begin{proposition}\label{propo:Sperner}
+  \notready
+Let \( p_{1},\dots,p_{k} \) be points of some finite-dimensional space
+\( \dR^{n} \).
+Suppose that there are closed sets \( F_{1},\dots,F_{k} \)
+with the property that for every subset \( 1 \le i_{1} < \dots < i_{j} \le k \)
+of the indices, the simplex \( S(p_{i_{1}},\dots,p_{i_{j}}) \) spanned by
+\( p_{i_{1}},\dots,p_{i_{j}} \) is covered by
+the union \( F_{i_{1}} \cup \dots \cup F_{i_{j}} \).
+Then the intersection \( \bigcap_{i} F_{i} \) of all these sets is not empty.
+ \end{proposition}
+
+The following lemma will also be needed.
+
+% Gacs source line 5750
+ \begin{lemma}\label{lem:concentr}
+  \uses{def:g4.1.5}
+For every closed set \( A \sbs \bX \) and measure \( \mu \), if \( \mu(A)=1 \) then
+there is a point \( x\in A \) with \( \t_{\mu}(x) \le 1 \).
+ \end{lemma}
+
+\begin{formalization}
+Planned over $\dS$ (any set $A$) and over $\dB^{\dN}$ ($A$ closed: the complement of an open set
+given by generators, as in Chapter 2's \texttt{openOf}). The last step needs strictness: if
+$\t_{\mu}>1$ on $A$ and $\mu(A) = 1$, then $\mu\t_{\mu}>1$.
+\end{formalization}
+ \begin{proof}
+  \proves{lem:concentr}
+This follows easily from 
+\( \mu\, t_{\mu} = \mu^{x} 1_{A}(x)t_{\mu}(x) \le 1 \).
+ \end{proof} 
+
+ \begin{proof}[Proof of Theorem~\protect\ref{thm:neutral-meas}]
+  \proves{thm:neutral-meas}
+  \notready
+  \uses{propo:Sperner, lem:concentr}
+For every point \( x \in \bX \), let \( F_{x} \) be the set of measures for which
+\( \t_{\mu}(x) \le 1 \).
+If we show that for every finite set of points \( x_{1},\dots,x_{k} \), we
+have 
+ \begin{equation}\label{eq:finite-inters}
+  F_{x_{1}}\cap\dots\cap F_{x_{k}} \ne \emptyset,
+ \end{equation}
+then we will be done.
+Indeed, according to Proposition~A.2.50, the compactness
+of \( \bX \) implies the compactness of the space \( \bM(\bX) \) of measures.
+Therefore if every finite subset of the family \( \setof{F_{x} : x \in \bX} \)
+of closed sets has a nonempty intersection, then the whole family has a
+nonempty intersection: this intersection consists of the neutral
+measures.
+
+To show~\eqref{eq:finite-inters}, let \( S(x_{1},\dots,x_{k}) \) be the set of
+probability measures concentrated on \( x_{1},\dots,x_{k} \).
+Lemma~\ref{lem:concentr} implies that each such measure belongs to one of
+the sets \( F_{x_{i}} \).
+Hence \( S(x_{1},\dots,x_{k}) \sbs F_{x_{1}} \cup \dots \cup F_{x_{k}} \),
+and the same holds for every subset of the indices \( \{1,\dots,k\} \).
+Sperner's Lemma~\ref{propo:Sperner} implies 
+\( F_{x_{1}} \cap \dots \cap F_{x_{k}} \ne\emptyset \).
+ \end{proof}
+
+When the space is not compact, there are generally no neutral probability
+measures, as shown by the following example.
+
+% Gacs source line 5788
+ \begin{proposition}\label{thm:no-neutral}
+  \uses{def:g4.1.5}
+Over the discrete space \( \bX = \dN \) of natural numbers,
+there is no neutral measure.
+ \end{proposition}
+
+\begin{formalization}
+Planned, with $\dN$ identified with $\dS$ by the standard enumeration. The test~\eqref{eq:no-neutral} is lower
+semicomputable in $(x,\mu)$ in the sense of Definition~\ref{our:lsc}, because $\sum_{y<x}\mu(y)$
+is a finite sum and the condition on it is strict.
+\end{formalization}
+ \begin{proof}
+  \proves{thm:no-neutral}
+  \uses{our:lsc}
+It is sufficient to 
+construct a randomness test \( t_{\mu}(x) \) with the property that for
+every measure \( \mu \), we have \( \sup_{x} t_{\mu}(x) = \infty \).
+Let 
+ \begin{equation}\label{eq:no-neutral}
+   t_{\mu}(x) = \sup\setof{ k \in \dN: \sum_{y<x}\mu(y) > 1-2^{-k}}.
+ \end{equation}
+By its construction, this is a lower semicomputable function with
+\( \sup_{x} t_{\mu}(x) = \infty \).
+It is a test if \( \sum_{x}\mu(x)t_{\mu}(x) \le 1 \).
+We have
+ \[
+  \sum_{x} \mu(x) t_{\mu}(x) 
+= \sum_{k>0} \sum_{t_{\mu}(x) \ge k} \mu(x)
+< \sum_{k>0} 2^{-k} \le 1.
+ \]
+ \end{proof}
+
+Using a similar construction over the space \( \dN^{\dN} \) of infinite
+sequences of natural numbers, we could show that 
+for every measure \( \mu \) there is a sequence \( x \) with \( \t_{\mu}(x)=\infty \).
+
+Proposition~\ref{thm:no-neutral} is a little misleading, since \( \dN \) can be
+compactified into \( \ol\dN = \dN \cup \{\infty\} \)
+(as in Part~1 of Example~A.1.22).
+Theorem~\ref{thm:neutral-meas} implies that there is a neutral probability
+measure \( M \) over the compactified space \( \ol\dN \).
+Its restriction to \( \dN \) is, of course, not a probability measure, since it
+satisfies only \( \sum_{x < \infty} M(x) \le 1 \).
+We called these functions \df{semimeasures}.
+
+ \begin{remark}\label{rem:compactify}\
+ \begin{enumerate}
+
+   \item
+ It is easy to see that 
+Theorem~\ref{thm:test-charac-discr} characterizing randomness in terms of
+complexity holds also for the space \( \ol\dN \).
+
+   \item
+The topological space of semimeasures
+over \( \dN \) is not compact, and there is no neutral one among them.
+Its topology is not the same as what we get when we restrict the topology
+of probability measures over \( \ol\dN \) to \( \dN \).
+The difference is that over \( \dN \), for example the set of measures
+\( \setof{\mu : \mu(\dN) > 1/2} \) is closed, since \( \dN \) (as the whole space)
+is a closed set.
+But over \( \ol\dN \), this set is not necessarily closed, since
+\( \dN \) is not a closed subset of \( \ol\dN \).
+ \end{enumerate}
+ \end{remark}
+
+Neutral measures are not too simple, even over \( \ol\dN \), as the following
+theorem shows.
+
+% Gacs source line 5848
+ \begin{theorem}\label{thm:no-upper-semi-neutral}
+  \notready
+  \uses{thm:test-charac-discr}
+There is no neutral measure over \( \ol\dN \) that is upper
+semicomputable over \( \dN \) or lower semicomputable over \( \dN \).
+ \end{theorem}
+
+\begin{formalization}
+Not planned: it is about neutral measures over the compactified space $\ol\dN$, outside the
+specialization.
+\end{formalization}
+ \begin{proof}
+  \proves{thm:no-upper-semi-neutral}
+  \notready
+Let us assume that \( \nu \) is a measure that is upper semicomputable over
+\( \dN \).
+Then the set
+ \[
+   \setof{(x,r) : x \in\dN,\; r\in\dQ,\; \nu(x) < r}
+ \]
+is recursively enumerable: let \( (x_{i},r_{i}) \) be a particular
+enumeration. 
+For each \( n \), let \( i(n) \) be the first \( i \) with \( r_{i} < 2^{-n} \), and let
+\( y_{n} = x_{i(n)} \).
+Then \( \nu(y_{n}) < 2^{-n} \), and at the same time \( K(y_{n}) \lea K(n) \).
+As mentioned, in Remark~\ref{rem:compactify}, 
+Theorem~\ref{thm:test-charac-discr} characterizing randomness in terms of
+complexity holds also for the space \( \ol\dN \).
+Thus, 
+ \[
+  \d_{\nu}(y_{n}) \eqa -\log\nu(y_{n}) - K(y_{n} \mvert \nu) \gea n - K(n).
+ \]
+Suppose now that \( \nu \) is lower semicomputable over \( \dN \).
+The proof for this case is longer.
+We know that \( \nu \) is the monotonic limit of a recursive sequence
+\( i\mapsto \nu_{i}(x) \) of recursive semimeasures with rational values
+\( \nu_{i}(x) \).
+For every \( k=0,\dots,2^{n}-2 \), let 
+ \begin{align*}
+  V_{n,k} &= \setof{\mu \in \cM(\ol\dN) : 
+k\cdot 2^{-n} < \mu(\{0,\dots,2^{n}-1\}) < (k+2)\cdot 2^{-n}},
+\\       J &= \setof{(n,k): k\cdot 2^{-n} < \nu(\{0,\dots,2^{n}-1\})}.
+ \end{align*}
+The set \( J \) is recursively enumerable.
+Let us define the functions \( j:J\to\dN \) and \( x:J\to\{0,\dots,2^{n}-1\} \)
+as follows: \( j(n,k) \) is the smallest \( i \) with 
+\( \nu_{i}(\{0,\dots,2^{n}-1\}) > k\cdot 2^{-n} \), and
+ \[
+   x_{n,k} = \min\setof{y < 2^{n}: \nu_{j(n,k)}(y) < 2^{-n+1}}.
+ \]
+Let us define the function \( f_{\mu}(x,n,k) \) as follows.
+We set \( f_{\mu}(x,n,k)=2^{n-2} \) if the following conditions hold:
+ \begin{alphenum}
+  \item\label{i:no-upper-semi-neutral.mu-global} \( \mu \in V_{n,k} \);
+  \item\label{i:no-upper-semi-neutral.mu-upper} \( \mu(x) < 2^{-n+2} \);
+  \item\label{i:no-upper-semi-neutral.unique}
+ \( (n,k) \in J \) and \( x=x_{n,k} \).
+ \end{alphenum}
+Otherwise, \( f_{\mu}(x,n,k)=0 \).
+Clearly, the function \( (\mu,x,n,k) \mapsto f_{\mu}(x,n,k) \) is lower
+semicomputable.
+Condition~\eqref{i:no-upper-semi-neutral.mu-upper} implies
+ \begin{equation}\label{eq:no-upper-semi-neutral.n-k-test}
+ \sum_{y} \mu(y) f_{\mu}(y,n,k) \le
+    \mu(x_{n,k})f_{\mu}(x_{n,k},n,k) < 2^{-n+2}\cdot 2^{n-2} = 1.
+ \end{equation}
+Let us show that \( \nu \in V_{n,k} \) implies
+ \begin{equation}\label{eq:found-bad}
+ f_{\nu}(x_{n,k},n,k) = 2^{n-2}.
+ \end{equation}
+Consider \( x=x_{n,k} \).
+Conditions~\eqref{i:no-upper-semi-neutral.mu-global} 
+and~\eqref{i:no-upper-semi-neutral.unique} are satisfied by definition.
+Let us show that condition~\eqref{i:no-upper-semi-neutral.mu-upper} is also 
+satisfied.
+Let \( j=j(n,k) \).
+By definition, we have \( \nu_{j}(x) < 2^{-n+1} \).
+Since by definition \( \nu_{j}\in V_{n,k} \) and \( \nu_{j} \le \nu \in V_{n,k} \),
+we have 
+ \[
+  \nu(x) \le \nu_{j}(x) + 2^{-n+1} < 2^{-n+1} + 2^{-n+1} = 2^{-n+2}.
+ \]
+Since all three conditions~\eqref{i:no-upper-semi-neutral.mu-global},
+\eqref{i:no-upper-semi-neutral.mu-upper}
+and~\eqref{i:no-upper-semi-neutral.unique} are satisfied, we have 
+shown~\eqref{eq:found-bad}.
+Now we define
+ \[
+   g_{\mu}(x) = \sum_{n\ge 2}\frac{1}{n(n+1)}\sum_{k}f_{\mu}(x,n,k).
+ \]
+Let us prove that \( g_{\mu}(x) \) is a uniform test.
+It is lower semicomputable by definition, so we only need to prove
+\( \sum_{x} \mu(x) f_{\mu}(x) \le 1 \).
+For this, let \( I_{n,\mu} = \setof{k: \mu\in V_{n,k}} \).
+Clearly by definition, \( \card{I_{n,\mu}}\le 2 \).
+We have, using this last fact and the test 
+property~\eqref{eq:no-upper-semi-neutral.n-k-test}:
+ \[
+  \sum_{x} \mu(x) g_{\mu}(x) = 
+  \sum_{n\ge 2}\frac{1}{n(n+1)}
+  \sum_{k\in I_{n,\mu}} \sum_{x}\mu(x) f_{\mu}(x,n,k)
+       \le  \sum_{n\ge 2}\frac{1}{n(n+1)}\cdot 2 \le 1.
+ \]
+Thus, \( g_{\mu}(x) \) is a uniform test.
+If \( \nu\in V_{n,k} \) then we have
+ \[
+ \t_{\nu}(x_{n,k}) 
+\gem g_{\nu}(x_{n,k}) \ge \frac{1}{n(n+1)}f_{\mu}(x_{n,k},n,k) \ge 
+  \frac{2^{n-2}}{n(n+1)}.
+ \]
+Hence \( \nu \) is not neutral.
+ \end{proof}
+
+% Gacs source line 5952
+ \begin{remark}
+  \label{rem:g4.3.5}
+In~\cite{LevinUnif76} and~\cite{LevinRandCons84},
+Levin imposed extra conditions on tests which allow to find a lower
+semicomputable neutral semimeasure.
+ \end{remark}
+
+The universal lower semicomputable
+semimeasure \( \m(x) \) has a certain property similar to neutrality.
+According to Theorem~\ref{thm:defic-charac-cpt-seqs} specialized to
+one-element sequences, for every computable measure \( \mu \) we have
+\( \d_{\mu}(x) \eqa -\log\mu(x) - K(x) \)
+(where the constant in \( \eqa \) depends on \( \mu \)).
+So, for computable measures, the expression
+ \begin{equation}\label{eq:ol-d}
+  \ol\d_{\mu}(x) = -\log\mu(x) - K(x)
+ \end{equation}
+can serve as a reasonable deficiency of randomness.
+(We will also use the test \( \ol\t = 2^{\ol\d} \).)
+If we substitute \( \m \) for \( \mu \) in \( \ol\d_{\mu}(x) \), we get 0.
+This substitution is not justified, of course.
+The fact that \( \m \) is not a probability 
+measure can be helped, using compactification as above, 
+and extending the notion of randomness tests. 
+But the test \( \ol\d_{\mu} \) can replace \( \d_{\mu} \)
+only for computable \( \mu \), while \( \m \) is not computable.
+Anyway, this is the sense in which all outcomes might
+be considered random with respect to \( \m \), and the heuristic
+sense in which \( \m \) may be considered ``neutral''.
+
+\section{Monotonicity, quasi-convexity/concavity}
+
+ Some people find that \( \mu \)-tests as defined in Definition~\ref{def:mu-test} are
+ too general, in case \( \mu \) is a non-computable measure.
+ In particular, randomness with respect to computable measures has 
+ a certain---intuitively meaningful---monotonicity property:
+ roughly, if \( \nu \) is greater than \( \mu \) then if
+ \( x \) is random with respect to \( \mu \), it should also be random with respect to
+ \( \nu \).
+
+% Gacs source line 5991
+  \begin{proposition}\label{propo:test-computable-mon}
+  \uses{def:g4.1.5}
+ For computable measures \( \mu,\nu \) we have for all rational \( c>0 \):
+  \begin{align}\label{eq:test-computable-mon}
+   2^{-k}\mu\le \nu \imp \d_{\nu}(x)\lea \d_{\mu}(x)+ k + K(k).
+  \end{align}
+ Here the constant in \( \lea \) depends on \( \mu,\nu \), but not on \( k \).
+  \end{proposition}
+
+\begin{formalization}
+Planned for computable $\mu,\nu$ over either space, with the constant independent of $k$. The sum
+is built with Theorem~\ref{thm:trim}, trimming $2^{-k-1}\t_{\nu}$ to $\mu$-integral at most 1,
+which leaves it unchanged whenever $2^{-k}\mu\le\nu$; the weights $2^{-K(k)}$ sum to at most 1 by
+Kraft's inequality.
+\end{formalization}
+ \begin{proof}
+  \proves{propo:test-computable-mon}
+  \uses{thm:trim, l:kraft}
+ We have \( 1\ge\nu\t_{\nu}\ge 2^{-k}\mu\t_{\nu} \),
+ hence \( 2^{-k}\t_{\nu} \) is a \( \mu \)-test.
+ Using the method of Theorem~\ref{thm:trim} in finding universal tests, 
+ one can show that the sum
+  \begin{align*}
+    \sum_{k: 2^{-k}\mu\t_{\nu}<1} 2^{-k-K(k)}\t_{\nu}
+  \end{align*}
+ is a \( \mu \)-test, and hence \( \lem \t_{\mu} \).
+ Therefore this is true of each member of the sum, which is just what the theorem
+ claims.
+ \end{proof}
+
+ There are other properties true for tests on computable measures that we may
+ want to require for all measures.
+ For the following properties, let us define quasi-convexity, which is a
+ weakening of the notion of convexity.
+
+% Gacs source line 6016
+ \begin{definition}\label{def:quasi-convex}
+ A function \( f:V\to\dR \) defined on a vector space \( V \) is called
+ \df{quasi-convex} if for every real number \( x \) the set \( \setof{v: f(v)\le x} \)
+ is convex.
+ It is  \df{quasi-concave} if \( -f \) is quasi-convex.
+ \end{definition}
+
+\begin{formalization}
+Planned as Mathlib's \texttt{QuasiconvexOn} and \texttt{QuasiconcaveOn}; nothing new to define.
+\end{formalization}
+
+ It is easy to see that quasi-convexity is equivalent to the inequality
+  \begin{align*}
+  f(\lg u + (1-\lg)v)\le f(u)\lor f(v)
+  \end{align*}
+ for all \( u,v \) and \( 0<\lg<1 \), while quasi-concavity is equivalent to
+  \begin{align*}
+  f(\lg u + (1-\lg)v)\ge f(u)\land f(v)
+  \end{align*}
+
+The uniform test with respect to computable measures is approximately 
+both quasi-convex and quasi-concave.
+Let \( \nu=\lg\mu_{1}+(1-\lg)\mu_{2} \).
+
+Quasi-convexity means, roughly, that if \( x \) is random with respect to both
+\( \mu_{1} \) and \( \mu_{2} \) then it is also random with respect to \( \nu \).
+This property strengthens monotonicity in the cases where it applies.
+
+% Gacs source line 6040
+  \begin{proposition}\label{propo:test-computable-conv}
+  \uses{def:g4.1.5, def:quasi-convex}
+ Let \( \mu_{1},\mu_{2} \) be computable measures and \( 0<\lg<1 \) computable,
+with \( \nu=\lg\mu_{1}+(1-\lg)\mu_{2} \).
+ Then we have
+  \begin{align*}
+   \d_{\nu}(x) \lea\d_{\mu_{1}}(x)\lor\d_{\mu_{2}}(x) + K(\lg).
+  \end{align*}
+  \end{proposition}
+
+\begin{formalization}
+Planned with a constant depending on $\mu_{1},\mu_{2},\lg$. The explicit term $K(\lg)$ is a
+refinement through descriptions, as for the constants $K(d)+K(P)$ in Chapter 2
+(\texttt{IsLSCDescription}).
+\end{formalization}
+ \begin{proof}
+  \proves{propo:test-computable-conv}
+  \uses{coroll:trim}
+The relation \( 1\ge\nu\t_{\nu}=\lg\mu_{1}\t_{\nu}+(1-\lg)\mu_{2}\t_{\nu} \)
+implies \( 1\ge \mu_{i}\t_{\nu} \) for some \( i\in\{1,2\} \).
+Then \( \d_{\nu}\lea\d_{\mu_{i}}+K(\lg) \) (since \( \lg \) was used to define \( \nu \) and
+thus \( \t_{\nu} \)).
+ \end{proof}
+
+Quasi-concavity means, roughly, that if \( x \) is non-random with respect to both
+\( \mu_{1} \) and \( \mu_{2} \) then it is also nonrandom with respect to \( \nu \):
+
+% Gacs source line 6058
+  \begin{proposition}\label{propo:test-computable-conc}
+  \uses{def:g4.1.5, def:quasi-convex}
+ Let \( \mu_{1},\mu_{2} \) be computable measures and \( 0<\lg<1 \) arbitrary
+(not even necessarily computable), with \( \nu=\lg\mu_{1}+(1-\lg)\mu_{2} \).
+ Then we have
+  \begin{align*}
+   \d_{\nu} \gea\d_{\mu_{1}}\land\d_{\mu_{2}}.
+  \end{align*}
+  \end{proposition}
+
+\begin{formalization}
+Planned. Since $\lg$ is arbitrary, $\nu$ is in general not computable and the statement needs the
+uniform test. The constant depends only on $\mu_{1},\mu_{2}$: it comes from
+Corollary~\ref{coroll:trim} applied to the fixed function $\t_{\mu_{1}}\land\t_{\mu_{2}}$.
+\end{formalization}
+  \begin{proof}
+  \proves{propo:test-computable-conc}
+  \uses{coroll:trim}
+ The function \( \t_{\mu_{1}}\land\t_{\mu_{2}} \) 
+is lower semicomputable, and is a \( \mu_{i} \)-test for each \( i \).
+Therefore it is also a \( \nu \)-test, and as such is \( \lem\t_{\nu} \).
+Here, the constant in the \( \lem \) depends only on (the programs for)
+\( \mu_{1},\mu_{2} \), and not on \( \lg \).
+  \end{proof}
+
+ These properties do not survive for arbitrary measures and arbitrary constants.
+
+% Gacs source line 6076
+  \begin{example}\label{example:monotonicity-counter}\
+ Let measure \( \mu_{1} \) be uniform over the interval \( \clint{0}{1/2} \), 
+let \( \mu_{2} \) be uniform over \( \clint{1/2}{1} \).
+For \( 0\le x \le 1 \) let
+ \begin{align*}
+      \nu_{x} &= (1-x)\mu_{1} + x\mu_{2}.
+  \end{align*}
+Then \( \nu_{1/2} \) is uniform over \( \clint{0}{1} \).
+Let \( \phi_{x} \) be the uniform distribution over \( \clint{x}{x+1/2} \),
+and \( \psi_{x} \) the uniform distribution over
+\( \clint{0}{x}\cup\clint{x+1/2}{1} \).
+
+Let \( p<1/2 \) be random with respect to the uniform
+distribution \( \nu_{1/2} \).
+
+ \begin{enumerate}
+  \item The relations
+ \begin{align*}
+  \nu_{1/2}\le p^{-1}\nu_{p},
+  \quad \d_{\nu_{1/2}}(p)<\infty,\quad\d_{\nu_{p}}(p)=\infty
+ \end{align*} 
+show that any statement analogous to the monotonicity property of
+Proposition~\ref{propo:test-computable-mon}
+fails when the measures involved are not required to be computable.
+
+  \item
+For rational \( r \) with \( 0<r<p \) the relations
+\begin{align*}
+   \nu:=(1-p)\nu_{r} + p\nu_{1-r},
+\quad \d_{\nu}(p)=\infty,
+\quad\d_{\nu_{r}}(p)<\infty,
+\quad \d_{\nu_{1-r}}(p)<\infty 
+ \end{align*}
+provide a similar counterexample to Proposition~\ref{propo:test-computable-conv}.
+
+  \item
+The relations
+ \begin{align*}
+ \nu_{1/2} = (\nu_{p}+\nu_{1-p})/2, 
+ \quad \d_{\nu_{1/2}}(p)<\infty,\quad \d_{\nu_{p}}(p)=\d_{\nu_{1-p}}(p)=\infty
+ \end{align*}
+provide a similar counterexample to Proposition~\ref{propo:test-computable-conc}.
+
+The following counterexample relies on a less subtle effect:
+ \begin{align*}
+\nu_{1/2}=(\phi_{p}+\psi_{p})/2,
+\quad\d_{\nu_{1/2}}(p)<\infty,
+\quad\d_{\phi_{p}}(p)=\d_{\psi_{p}}(p)=\infty,
+ \end{align*}
+since
+as a boundary point of the support, \( p \) is computable from both \( \phi_{p} \) and
+\( \psi_{p} \) in a uniform way.
+ \end{enumerate}
+For a complete proof, uniform tests must be provided for each of the cases: this
+is left as exercise for the reader.
+  \end{example}
+
+\begin{formalization}
+Not planned: an example over $\clint{0}{1}$, whose proofs are left as an exercise.
+\end{formalization}
+
+The non-monotonicity example could be used to argue that the 
+we allowed too many \( \mu \)-tests, that the test \( \t_{\mu}(x) \)
+should not be allowed to depend on properties of \( \mu \) that exploit the
+computational properties of \( \mu \) so much stronger than its quantitative
+properties.
+
+\section{Algorithmic entropy}
+
+Some properties of description complexity make it a good
+expression of the idea of individual information content.
+
+\subsection{Entropy}
+The entropy of a discrete probability distribution $\mu$ is defined as
+ \[
+   \cH(\mu) = - \sum_{x} \mu(x) \log \mu(x).
+ \]
+To generalize entropy to continuous distributions the
+\df{relative entropy} is defined as follows.
+Let $\mu,\nu$ be two measures, where $\mu$ is taken (typically, but not
+always), to be a probability measure, and $\nu$ another measure, that can
+also be a probability measure but is most frequently not.
+We define the \df{relative entropy} $\cH_{\nu}(\mu)$ as follows.
+If $\mu$ is not absolutely continuous with respect to $\nu$ then 
+$\cH_{\nu}(\mu) = -\infty$.
+Otherwise, writing 
+ \[
+  \frac{d\mu}{d\nu} = \frac{\mu(dx)}{\nu(dx)} =: f(x)
+ \] 
+for the (Radon-Nikodym) derivative 
+(density) of $\mu$ with respect to $\nu$, we define
+ \[
+   \cH_{\nu}(\mu) = - \int \log\frac{d\mu}{d\nu} d\mu 
+     = - \mu^{x} \log\frac{\mu(dx)}{\nu(dx)} = -\nu^{x} f(x) \log f(x).
+ \]
+Thus, $\cH(\mu) = \cH_{\#}(\mu)$ is a special case.
+
+% Gacs source line 6169
+ \begin{example}
+  \label{ex:g4.5.1}
+ Let $f(x)$ be a probability density function for the distribution
+$\mu$ over the real line, and let $\lg$ be the Lebesgue measure there.
+Then
+ \[
+   \cH_{\lg}(\mu) = -\int f(x) \log f(x) d x.
+ \]
+ \end{example}
+
+In information theory and statistics, when both $\mu$ and $\nu$ are
+probability measures, then $-\cH_{\nu}(\mu)$ is also denoted
+$D(\mu \parallel \nu)$, and called (after Kullback) the
+information divergence of the two measures.
+It is frequently used in the role of a distance between $\mu$ and $\nu$.
+It is not symmetric, but can be shown to obey the triangle inequality, and
+to be nonnegative.
+Let us prove the latter property: in our terms, it says that relative
+entropy is nonpositive when both $\mu$ and $\nu$ are probability measures.
+
+% Gacs source line 6188
+ \begin{proposition}\label{propo:Kullback-pos}
+  \uses{def:g3.1.1}
+Over a space $X$, we have
+ \begin{equation}\label{eq:Kullback-pos}
+   \cH_{\nu}(\mu) \le -\mu(X) \log\frac{\mu(X)}{\nu(X)}.
+ \end{equation}
+ In particular, if $\mu(X) \ge \nu(X)$ then $\cH_{\nu}(\mu) \le 0$.
+ \end{proposition}
+
+\begin{formalization}
+Planned over $\dS$, where the density is $\mu(x)/\nu(x)$, in the conventions of Chapter 3's
+classical entropy (\texttt{Classical/Entropy.lean}): it is Gibbs' inequality
+(\texttt{entropy\_le\_crossEntropy}, \texttt{log\_sum\_inequality}). Densities over
+$\dB^{\dN}$ are not planned.
+\end{formalization}
+ \begin{proof}
+  \proves{propo:Kullback-pos}
+  \uses{thm:CsiszarConc}
+The inequality $- a \ln a \le -a\ln b + b-a$
+expresses the concavity of the logarithm function.
+Substituting $a = f(x)$ and $b = \mu(X)/\nu(X)$ 
+and integrating by $\nu$:
+ \begin{align*}
+ (\ln 2) \cH_{\nu}(\mu) &= 
+ -\nu^{x} f(x) \ln f(x) \le -\mu(X) \ln\frac{\mu(X)}{\nu(X)}
+  + \frac{\mu(X)}{\nu(X)} \nu(X) - \mu(X)
+\\ &= -\mu(X) \ln\frac{\mu(X)}{\nu(X)},
+ \end{align*}
+giving~\eqref{eq:Kullback-pos}.
+ \end{proof}
+
+\subsection{Algorithmic entropy}
+
+Le us recall some facts on description complexity.
+Let us fix some (finite or infinite) 
+alphabet $\Sg$ and consider the discrete space $\Sg^{*}$.
+
+The universal lower semicomputable
+semimeasure $\m(x)$ over $\Sg^{*}$ was defined 
+in Definition~\ref{def:m}.
+It is possible to turn $\m(x)$ into a measure, by compactifying the
+discrete space $\Sg^{*}$ into 
+ \[
+  \ol{\Sg^{*}}=\Sg^{*}\cup\{\infty\}
+ \]
+(as in part~1 of Example~A.1.22;
+this process makes sense also for a constructive discrete space),
+and setting $\m(\infty) = 1-\sum_{x\in\Sg^{*}} \m(x)$.
+The extended measure $\m$ is not quite lower semicomputable since
+the number $\mu(\ol{\Sg^{*}} \xcpt \{0\})$ is not necessarily
+lower semicomputable.
+
+% Gacs source line 6230
+ \begin{remark}
+  \label{rem:g4.5.3}
+A measure $\mu$ is computable over $\ol{\Sg^{*}}$ if and only if the
+function $x \mapsto \mu(x)$ is computable for $x \in \Sg^{*}$.
+This property does not imply that the number
+ \[
+ 1 - \mu(\infty) = \mu(\Sg^{*}) = \sum_{x\in\Sg^{*}} \mu(x)
+ \]
+ is computable.
+ \end{remark}
+
+Let us allow, for a moment, measures $\mu$ that are not probability
+measures: they may not even be finite.
+Metric and computability can be extended to this case, the universal test
+$\t_{\mu}(x)$ can also be generalized.
+The Coding Theorem~\ref{thm:coding}
+and other considerations suggest the introduction of
+the following notation, for an arbitrary measure $\mu$:
+
+% Gacs source line 6248
+ \begin{definition}
+  \label{def:g4.5.4}
+  \uses{def:g4.1.5, our:m-cond, thm:coding}
+We define the \df{algorithmic entropy} of a point $x$ with respect to measure
+$\mu$ as
+ \begin{equation}\label{eq:alg-ent}
+   H_{\mu}(x) = -\d_{\mu}(x) = -\log\t_{\mu}(x).
+ \end{equation}
+ \end{definition}
+
+\begin{formalization}
+Planned, multiplicatively: $2^{-H_{\mu}(x)} = \t_{\mu}(x)$. Here $\mu$ ranges over
+Definition~\ref{our:measure} and the counting measure $\#$ over $\dS$. Then $\t_{\#} = \m$ is
+Chapter 1's universal semimeasure, so $K(x)\eqa H_{\#}(x)$ is the coding theorem.
+\end{formalization}
+Then, with $\#$ defined as the counting measure over the discrete set
+$\Sg^{*}$ (that is, $\#(S) = \card{S}$), we have
+ \[
+   K(x) \eqa H_{\#}(x).
+ \]
+This allows viewing $H_{\mu}(x)$ as a generalization of description
+complexity.
+
+The following theorem generalizes an earlier known theorem stating that
+over a discrete space, for a computable measure,
+entropy is within an additive constant the same as ``average complexity'':
+$\cH(\mu) \eqa \mu^{x} K(x)$.
+
+% Gacs source line 6268
+ \begin{theorem}
+  \label{thm:g4.5.1}
+  \uses{def:g4.5.4, thm:g3.1.3}
+Let $\mu$ be a probability measure.
+Then we have
+ \begin{equation}\label{eq:entropy-less-avg-algentr}
+  \cH_{\nu}(\mu) \le \mu^{x} H_{\nu}(x \mvert \mu).
+ \end{equation}
+If $X$ is a discrete space then the following estimate also holds:
+  \begin{equation}\label{eq:entropy-gea-avg-algentr}
+  \cH_{\nu}(\mu) \gea \mu^{x} H_{\nu}(x \mvert \mu).
+  \end{equation}
+ \end{theorem}
+
+\begin{formalization}
+Planned for $X = \dS$ only, with $\nu$ a measure of Definition~\ref{our:measure} or $\#$; over
+other spaces the first inequality needs densities. For $\nu = \#$ it reads
+$\cH(\mu)\le\sum_{x}\mu(x)K(x \mvert \mu)\lea\cH(\mu)$, which generalizes Theorem~3.1.3
+(\texttt{Classical.entropy\_expectedComplexity}) to noncomputable $\mu$, with
+$K(x \mvert \mu)$ in place of $K(x)$ and no $K(\mu)$ term.
+\end{formalization}
+ \begin{proof}
+  \proves{thm:g4.5.1}
+  \uses{propo:Kullback-pos, our:lsc-props}
+Let
+$\dg$ be the measure with density $\t_{\nu}(x \mvert \mu)$ with respect to
+$\nu$: $\t_{\nu}(x \mvert \mu) = \frac{\dg(dx)}{\nu(dx)}$.
+Then $\dg(X) \le 1$.
+It is easy to see from the maximality property of $\t_{\nu}(x \mvert \mu)$
+that $\t_{\nu}(x \mvert \mu) > 0$, therefore according to
+Proposition~A.2.23, we have
+$\frac{\nu(dx)}{\dg(dx)} = \Paren{\frac{\dg(dx)}{\nu(dx)}}^{-1}$.
+Using Proposition~A.2.23 and~\ref{propo:Kullback-pos}: 
+ \begin{align*}
+     \cH_{\nu}(\mu)     &= - \mu^{x} \log\frac{\mu(dx)}{\nu(dx)},
+\\   - \mu^{x} H_{\nu}(x \mvert \mu) &=  \mu^{x} \log \frac{\dg(dx)}{\nu(dx)}
+              = - \mu^{x} \log \frac{\nu(dx)}{\dg(dx)},
+\\    \cH_{\nu}(\mu) - \mu^{x} H_{\nu}(x \mvert \mu)
+     &= - \mu^{x} \log \frac{\mu(dx)}{\dg(dx)} 
+  \le -\mu(X) \log\frac{\mu(X)}{\dg(X)} \le 0.
+ \end{align*}
+This proves~\eqref{eq:entropy-less-avg-algentr}.
+
+Over a discrete space $X$, the function
+$(x,\mu,\nu) \mapsto \frac{\mu(dx)}{\nu(dx)} = \frac{\mu(x)}{\nu(x)}$
+is computable, therefore by the maximality property of
+$H_{\nu}(x \mvert \mu)$ we have 
+$\frac{\mu(dx)}{\nu(dx)} \lem \t_{\nu}(x \mvert \mu)$,
+hence $\cH_{\nu}(\mu) = -\mu^{x} \log \frac{\mu(dx)}{\nu(dx)} 
+ \gea \mu^{x} H_{\nu}(x \mvert \mu)$.
+ \end{proof} 
+
+
+\subsection{Addition theorem}
+The Addition Theorem~\eqref{eq:Haddit}
+can be generalized to the algorithmic entropy $H_{\mu}(x)$
+introduced in~\eqref{eq:alg-ent} (a somewhat similar generalization appeared
+in~\cite{VovkVyugin93}).
+The generalization, defining $H_{\mu,\nu} = H_{\mu\times\nu}$, is
+ \begin{equation}\label{eq:addition-general}
+   H_{\mu,\nu}(x,y)\eqa
+  H_\mu(x \mvert \nu)+ H_\nu(y \mvert x,\; H_\mu(x \mvert \nu),\; \mu).
+ \end{equation}
+Before proving the general addition theorem, we establish a few useful
+facts.
+
+% Gacs source line 6321
+ \begin{proposition}\label{propo:int.H.of.xy}
+  \uses{def:g4.5.4}
+ We have
+ \[
+  H_{\mu}(x \mvert \nu) \lea -\log \nu^{y} 2^{-H_{\mu,\nu}(x, y)}.
+ \]
+ \end{proposition}
+
+\begin{formalization}
+Planned over $\dS$. The product $\mu\times\nu$ is $\ang{x,y}\mapsto\mu(x)\nu(y)$ on pairs coded by
+\texttt{pairCode}, a measure of Definition~\ref{our:measure}, computable from names of $\mu$ and
+$\nu$ (Theorem~\ref{our:lsc-props}(d)).
+\end{formalization}
+ \begin{proof}
+  \proves{propo:int.H.of.xy}
+  \uses{our:lsc-props}
+The function $f(x,\mu,\nu)$ that is the right-hand side, is upper
+semicomputable by definition, and obeys $\mu^{x}2^{-f(x,\mu,\nu)} \le 1$.
+Therefore the inequality follows from the minimum property of
+$H_{\mu}(x)$.
+ \end{proof}
+
+Let $z \in \dN$, then the inequality
+ \begin{equation}\label{eq:H.x.cond.z}
+  H_{\mu}(x) \lea K(z) + H_{\mu}(x \mvert z)
+ \end{equation}
+ will be a simple consequence of the general addition theorem.
+The following lemma, needed in the proof of the theorem,
+generalizes this inequality somewhat:
+
+% Gacs source line 6342
+  \begin{lemma}\label{lem:H.x.cond.z}
+  \uses{def:g4.5.4}
+ For a com\-put\-able func\-tion $(y,z) \mapsto f(y,z)$ over $\dN$,
+we have
+ \[
+  H_{\mu}(x \mvert y) \lea K(z) + H_{\mu}(x \mvert f(y,z)).
+ \]
+ \end{lemma}
+
+\begin{formalization}
+Planned. $K(z)$ is Chapter 1's prefix complexity, and $\sum_{z}2^{-K(z)}\le 1$ is Kraft's
+inequality.
+\end{formalization}
+ \begin{proof}
+  \proves{lem:H.x.cond.z}
+  \uses{our:lsc-props, l:kraft}
+  The function
+ \[
+  (x,y,\mu) \mapsto g_{\mu}(x, y)=\sum_{z} 2^{-H_{\mu}(x \mvert f(y,z))-K(z)}
+ \]
+ is lower semicomputable,
+and $\mu^{x} g_{\mu}(x, y) \le \sum_{z} 2^{-K(z)} \le 1$.
+Hence $g_{\mu}(x, y) \lem 2^{-H_{\mu}(x \mvert y)}$.
+The left-hand side is a sum, hence the inequality holds for each
+element of the sum: just what we had to prove.
+ \end{proof}
+
+The following monotonicity property will be needed:
+
+% Gacs source line 6363
+\begin{lemma}\label{lem:mon}
+  \uses{def:g4.5.4}
+ For $i < j$ we have
+ \[
+   i + H_\mu(x\mvert i) \lea j + H_\mu(x\mvert j) .
+ \]
+\end{lemma}
+\begin{proof}
+  \proves{lem:mon}
+  \uses{lem:H.x.cond.z}
+  From Lemma~\ref{lem:H.x.cond.z}, with $f(i, n)=i + n$ we have
+ \[
+   H_{\mu}(x \mvert i) - H_{\mu}(x \mvert j) \lea K(j-i) \lea j-i.
+ \]
+\end{proof}
+
+Let us generalize the minimum property of $H_{\mu}(x)$.
+
+% Gacs source line 6378
+ \begin{proposition}\label{propo:univ-test-gener}
+  \uses{def:g4.5.4, coroll:trim-univ}
+Let $(y,\nu)\mapsto F_{\nu}(y)$ be an upper semicomputable
+function with values in $\ol\dZ=\dZ\cup\{-\infty,\infty\}$.
+Then by Corollary~\ref{coroll:trim-univ} among the lower semicomputable functions
+$(x,y,\nu) \mapsto g_{\nu}(x,y)$ with $\nu^{x}g_{\nu}(x,y)\le 2^{-F_{\nu}(y)}$
+there is one that is maximal to within a multiplicative constant.
+Choosing $f_{\nu}(x,y)$ as such a function we have
+for all $x$ with $F_{\nu}(y) > -\infty$:
+ \begin{align*}
+  f_{\nu}(x,y) &\eqm 2^{-F_{\nu}(y)}\t_{\nu}(x \mvert y, F_{\nu}(y)),
+ \end{align*}
+or in logarithmic notation 
+$-\log f_{\nu}(x,y) \eqa F_{\nu}(y)+H_{\nu}(x \mvert y, F_{\nu}(y))$.
+ \end{proposition}
+
+\begin{formalization}
+Planned for $x$ over $\dS$, conditions $y$ as in Definition~\ref{our:m-cond}, and integer-valued
+$F$. Substituting the upper semicomputable $F_{\nu}(y)$ for $m$ in $g_{\nu}(x,y,m)$, which is
+decreasing in $m$, is Theorem~\ref{our:lsc-props}(d).
+\end{formalization}
+ \begin{proof}
+  \proves{propo:univ-test-gener}
+  \uses{thm:trim, lem:mon, our:lsc-props}
+  To prove the inequality $\gem$, define
+ \[
+   g_{\nu}(x,y,m) =\max_{i\ge m}2^{-i}\t_{\nu}(x \mvert y, i).
+ \]
+  Function $g_{\nu}(x,y,m)$ is lower semicomputable and decreasing
+in $m$.
+Therefore 
+ \[
+  g_{\nu}(x,y)  = g_{\nu}(x,y,F_{\nu}(y))
+ \]
+is also lower semicomputable since it is obtained by substituting an
+upper semicomputable function for $m$ in $g_{\nu}(x,y,m)$.
+The multiplicative form of Lemma~\ref{lem:mon} implies
+ \begin{align*}
+       g_{\nu}(x,y,m) &\eqm 2^{-m}\t_{\nu}(x \mvert y, m),
+\\   g_{\nu}(x,y) &\eqm 2^{-F_{\nu}(y)}\t_{\nu}(x \mvert y, F_{\nu}(y)).
+ \end{align*}
+We have, since $\t_{\nu}$ is a test:
+ \begin{align*}
+   \nu^{x}2^{-m}\t_{\nu}(x \mvert y, m) &\le 2^{-m},
+\\   \nu^{x}g_{\nu}(x,y) &\lem 2^{-F_{\nu}(y)},
+ \end{align*}
+implying $g_{\nu}(x,y)\lem f_{\nu}(x,y)$ by the optimality of $f_{\nu}(x,y)$.
+
+To prove the upper bound, consider all lower semicomputable functions
+$\phi_{e}(x,y,m,\nu)$ ($e=1,2,\dots$).
+By Theorem~\ref{thm:trim}, there is a recursive mapping $e\mapsto e'$ with the
+property that $\nu^{x}\phi_{e'}(x,y,m,\nu)\le 2^{-m+1}$, and for each $y,m,\nu$ if
+$\nu^{x}\phi_{e}(x,y,m,\nu)< 2^{-m+1}$ then $\phi_{e}=\phi_{e'}$.
+Let us apply this transformation to the function
+$\phi_{e}(x,y,m,\nu)=f_{\nu}(x,y)$.
+The result is a lower semicomputable function 
+$f'_{\nu}(x,y,m)=\phi_{e'}(x,y,m,\nu)$
+with the property that $\nu^{x}f'_{\nu}(x,y,m)\le 2^{-m+1}$, further
+$\nu^{x}f_{\nu}(x,y)\le 2^{-m}$ implies $f'_{\nu}(x,y,m)=f_{\nu}(x,y)$.
+Now $(x,y,m,\nu)\mapsto 2^{m-1}f'_{\nu}(x,y,m)$ is a uniform test
+of $x$ conditional on $y,m$ and hence it is $\lem\t_{\nu}(x \mvert y, m)$.
+Substituting $F_{\nu}(y)$ for $m$ the relation
+$\nu^{x}f_{\nu}(x,y)\le 2^{-m}$ is satisfied and hence we have
+ \begin{align*}
+ f_{\nu}(x,y) =
+ f'_{\nu}(x,y,F_{\nu}(y)) \lem 2^{-F_{\nu}(y)+1}\t_{\nu}(x\mvert y,F_{\nu}(y)).
+ \end{align*}
+ \end{proof}
+
+As mentioned above, the
+theory generalizes to measures that are not probability measures.
+Taking $f_{\mu}(x,y)=1$ in Proposition~\ref{propo:univ-test-gener} gives
+the inequality
+ \[
+   H_{\mu}(x \mvert \flo{\log \mu(X)}) \lea \log\mu(X),
+ \]
+with a physical meaning when $\mu$ is the phase space measure.
+Using~\eqref{eq:H.x.cond.z}, this implies
+ \begin{equation}\label{eq:unif.ub}
+  H_\mu(x)\lea \log\mu(X) + K(\flo{\log\mu(X)}).
+  \end{equation}
+
+% Gacs source line 6451
+ \begin{theorem}[General addition]\label{thm:addition-general}
+  \uses{def:g4.5.4, thm:g3.1.4}
+The following inequality holds:
+ \[
+   H_{\mu,\nu}(x,y) \eqa
+  H_{\mu}(x \mvert \nu)+ H_{\nu}(y \mvert x,\; H_\mu(x \mvert \nu),\; \mu).
+ \]
+ \end{theorem}
+
+\begin{formalization}
+Planned over $\dS$, with $\mu,\nu$ measures of Definition~\ref{our:measure} or $\#$, and with
+$H_{\mu}(x \mvert \nu)$ rounded to an integer where it enters as a condition, as
+Proposition~\ref{propo:univ-test-gener} requires. For $\mu = \nu = \#$ it is the addition
+theorem~\eqref{eq:Haddit}, $K(x,y)\eqa K(x)+K(y \mvert x,K(x))$, formalized in Chapter 3 as
+\texttt{addition}; the plan obtains that case through Definition~\ref{our:m-cond}(b).
+\end{formalization}
+ \begin{proof}
+  \proves{thm:addition-general}
+  \uses{propo:int.H.of.xy, lem:mon, propo:univ-test-gener}
+To prove the inequality $\lea$ define
+$G_{\mu,\nu}(x,y,m) =\min_{i\ge m}\;i +  H_{\nu}(y \mvert x, i, \mu)$.
+This function is upper semicomputable and increasing
+in $m$.
+Therefore function
+  \[
+   G_{\mu,\nu}(x,y)  = G_{\mu,\nu}(x, y, H_{\mu}(x \mvert \nu))
+  \]
+is also upper semicomputable since it is obtained by substituting an
+upper semicomputable function for $m$ in $G_{\mu,\nu}(x,y,m)$.
+Lemma~\ref{lem:mon} implies 
+  \begin{align*}
+     G_{\mu,\nu}(x,y,m) &\eqa m +  H_{\nu}(y \mvert x, m, \mu),
+ \\  G_{\mu,\nu}(x,y)   &\eqa H_{\mu}(x \mvert \nu) + 
+    H_{\nu}(y \mvert x, H_{\mu}(x \mvert \nu), \mu).
+  \end{align*}
+   Now, we have
+  \begin{align*}
+    \nu^{y} 2^{-m - H_{\nu}(y \mvert x, m, \mu)} &\le 2^{-m},
+ \\   \nu^{y} 2^{-G_{\mu,\nu}(x,y)} &\lem 2^{-H_{\mu}(x \mvert \mu)}.
+  \end{align*}
+Integrating over $x$ by $\mu$ gives $\mu^{x}\nu^{y}2^{-G} \lem 1$, implying
+$H_{\mu,\nu}(x,y) \lea G_{\mu,\nu}(x,y)$ 
+by the minimality property of $H_{\mu,\nu}(x,y)$.
+This proves the $\lea$ half of the theorem.
+
+To prove the inequality $\gea$ let $f_{\nu}(x,y,\mu) = 2^{-H_{\mu,\nu}(x,y)}$.
+Proposition~\ref{propo:int.H.of.xy} implies that there is a constant $c$ with
+$\nu^{y} f_{\nu}(x,y,\mu) \le 2^{-H_{\mu}(x \mvert \nu)+c}$.
+Let 
+ \begin{align*}
+  F_{\nu}(x, \mu) = H_{\mu}(x \mvert \nu).
+ \end{align*}
+Proposition~\ref{propo:univ-test-gener} gives (substituting $y$ for $x$ and
+  $(x,\mu)$ for $y$):
+ \begin{align*}
+  H_{\mu,\nu}(x,y) = -\log f_{\nu}(x,y,\mu) 
+   \gea F_{\nu}(x,\mu)+ H_{\nu}(y \mvert x,F_{\nu}(x,\mu),\mu),
+ \end{align*}
+which is what needed to be proved.
+ \end{proof}
+
+  The function $H_\mu(\og)$ behaves quite differently for different
+kinds of measures $\mu$.
+Recall the following property of complexity:
+ \begin{equation} \label{eq:compl.of.fun}
+  K(f(x)\mvert y)\lea K(x\mvert g(y)) \lea K(x) .
+ \end{equation}
+for any computable functions $f,g$.
+This implies
+ \[
+   K(y)\lea K(x,y).
+ \]
+  In contrast, if $\mu$ is a probability measure then
+ \[
+    H_\nu(y) \gea H_{\mu,\nu}(\og,y).
+ \]
+  This comes from the fact that $2^{-H_\nu(y)}$ is a test for
+$\mu\times\nu$.
+
+\subsection{Information}
+
+Mutual information has been defined in Definition~\ref{def:I*}
+as $I^{*}(x : y) = K(x) + K(y) - K(x,y)$.
+By the Addition theorem, we have
+$I^{*}(x:y) \eqa K(y) - K(y \mvert x,\, K(x)) \eqa K(x) - K(x \mvert y,\,K(y))$.   
+The two latter expressions show that in some sense, $I^{*}(x:y)$ is the
+information held in $x$ about $y$ as well as the information held in $y$
+about $x$.  
+(The terms $K(x)$, $K(y)$ in the conditions are
+logarithmic-sized corrections to this idea.)
+Using~\eqref{eq:ol-d}, it is interesting to view
+mutual information $I^{*}(x : y)$ as a deficiency of randomness of
+the pair $(x,y)$
+in terms of the expression $\ol\d_{\mu}$, with respect to $\m \times \m$:
+ \[
+   I^{*}(x : y) = K(x) + K(y) - K(x,y) = \ol\d_{\m \times \m}(x, y).
+ \]
+Taking $\m$ as a kind of ``neutral'' probability, even if it is not quite
+such, allows us to view $I^{*}(x:y)$ as a ``deficiency of independence''.
+Is it also true that $I^{*}(x:y) \eqa \d_{\m \times \m}(x)$?
+This would allow us to deduce, as Levin did, ``information conservation''
+laws from randomness conservation laws.\footnote{We cannot use the 
+test $\ol\t_{\mu}$ for this, since it can be shown easily
+that it does not to obey randomness conservation.}
+
+Expression $\d_{\m \times \m}(x)$ must be understood
+again in the sense of compactification, as in
+Section~\ref{sec:neutral}.
+There seem to be two reasonable ways to compactify the space
+$\dN\times\dN$: we either compactify it directly, by adding a symbol
+$\infty$, or we form the product $\ol\dN \times \ol\dN$.
+With either of them, preserving
+Theorem~\ref{thm:test-charac-discr}, we would
+have to check whether $K(x,y \mvert \m \times \m) \eqa K(x,y)$.
+But, knowing the function $\m(x)\times\m(y)$ we 
+know the function $x \mapsto \m(x) \eqm \m(x) \times \m(0)$,
+hence also the function $(x,y)\mapsto\m(x,y) = \m(\ang{x,y})$.
+Using this knowledge, it is possible to develop an argument similar to
+the proof of Theorem~\ref{thm:no-upper-semi-neutral}, showing that
+$K(x,y \mvert \m \times \m) \eqa K(x,y)$ does not hold.
+
+ \begin{question} 
+Is there a neutral measure $M$ with the property that
+$I^{*}(x:y) = \d_{M\times M}(x,y)$?
+Is this true maybe for all neutral measures $M$?
+If not, how far apart are the expressions $\d_{M\times M}(x,y)$ and
+$I^{*}(x:y)$ from each other?
+ \end{question}
+
+
+  \section{Randomness and complexity}
+
+We have seen in the discrete case that complexity and randomness are
+closely related.
+The connection is more delicate technically in the continuous case, but its
+exploration led to some nice results.
+
+\subsection{Discrete space}
+It is known that for computable \( \mu \), the test \( \d_{\mu}(x) \) can be
+expressed in terms of the description complexity of \( x \)
+(we will prove these expressions below).
+Assume that \( \bX \) is the (discrete) space of all binary strings.
+Then we have 
+\begin{equation}\label{eq:test-charac-fin-cpt}
+   \d_{\mu}(x) = -\log \mu(x) - K(x) + O(K(\mu)).
+\end{equation}
+The meaning of this equation is the following.  
+The expression
+\( -\log\mu(x) \) is an upper bound (within \( O(K(\mu)) \)) of the complexity
+\( K(x) \), and nonrandomness of \( x \) is measured by
+the difference between the complexity and this upper bound.
+Assume that \( \bX \) is the space of infinite binary sequences.
+Then equation~\eqref{eq:test-charac-fin-cpt} must be replaced with
+\begin{equation}\label{eq:test-charac-infin-cpt}
+   \d_{\mu}(x) = 
+ \sup_{n}\Paren{-\log \mu(x^{\le n}) - K(x^{\le n}) + O(K(\mu))}.
+\end{equation}
+For noncomputable measures, we cannot replace \( O(K(\mu)) \) in
+these relations with anything finite, as shown in
+the following example.
+Therefore however attractive and simple, 
+\( \exp(-\log \mu(x) - K(x)) \) is not a universal uniform test of randomness. 
+
+% Gacs source line 6603
+ \begin{proposition}\label{propo:test-charac-counterexample}
+  \uses{def:g4.1.5}
+There is a measure \( \mu \) over the discrete space \( \bX \) of binary strings
+such that for each \( n \), there is an \( x \) with
+\( \d_{\mu}(x) = n - K(n) \) and \( -\log \mu(x) - K(x) \lea 0 \).
+ \end{proposition}
+
+\begin{formalization}
+Planned. The measure $\mu$ lives on the pairs $(0^{n},y_{n})$ and is not computable; a $y_{n}$
+with $K(0^{n},y_{n})>n$ exists by counting. The test $t_{\mu}$ is lower semicomputable in
+$(x,\mu)$, since its denominator is a finite sum of values of $\mu$.
+\end{formalization}
+ \begin{proof}
+  \proves{propo:test-charac-counterexample}
+  \uses{our:lsc}
+Let us treat the domain of our measure \( \mu \) as a set of pairs \( (x,y) \).
+Let \( x_{n} = 0^{n} \), for \( n=1,2,\dotsc \).
+For each \( n \), let \( y_{n} \) be some binary string of length \( n \)
+with the property \( K(x_{n}, y_{n}) > n \).
+Let \( \mu(x_{n},y_{n})=2^{-n} \), and 0 elsewhere.
+Then \( - \log \mu(x_{n},y_{n}) - K(x_{n},y_{n}) \le n - n = 0 \).
+On the other hand, let \( t_{\mu}(x,y) \) be the test nonzero only on pairs of strings
+\( (x,y) \) of the form \(( x_{n},y) \):
+ \[
+ t_{\mu}(x_{n}, y) = \frac{\m(n)}{\sum_{z \in \cB^{n}} \mu(x_{n}, z)}.
+ \]
+The form of the definition ensures semicomputability and we also have
+ \[
+ \sum_{x,y} \mu(x,y) t_{\mu}(x,y) \le \sum_{n} \m(n) < 1,
+ \]
+therefore \( t_{\mu} \) is indeed a test.
+Hence \( \t_{\mu}(x,y) \gem t_{\mu}(x,y) \).
+Taking logarithms, \( \d_{\mu}(x_{n}, y_{n}) \gea n - K(n) \).
+ \end{proof}
+
+ The same example shows that the test defined as
+\( \exp(-\log\mu(x) - K(x)) \) over discrete sets,
+does not satisfy the randomness conservation property.
+
+% Gacs source line 6633
+ \begin{proposition}
+  \label{prop:g4.6.2}
+  \uses{propo:test-charac-counterexample}
+The test defined as \( f_{\mu}(x) = \exp(-\log\mu(x) - K(x)) \) 
+over discrete spaces \( \bX \) does
+not obey the conservation of randomness.
+ \end{proposition}
+ \begin{proof}
+  \proves{prop:g4.6.2}
+  \uses{propo:test-charac-counterexample}
+Let us use the example of Proposition~\ref{propo:test-charac-counterexample}.
+Consider the function \( \pi : (x,y) \mapsto x \).
+The image of the measure \( \mu \) under the projection is 
+\( (\pi\mu)(x) = \sum_{y} \mu(x,y) \).
+Thus, \( (\pi\mu)(x_{n}) = \mu(x_{n},y_{n}) = 2^{-n} \).
+Then we have seen that \( \log f_{\mu}(x_{n},y_{n}) \le 0 \).
+On the other hand,
+ \[ 
+ \log f_{\pi\mu} (\pi(x_{n},y_{n})) = -\log(\pi\mu)(x_{n}) - K(x_{n})
+ \eqa n - K(n). 
+ \]
+Thus, the projection \( \pi \) takes a random pair \( (x_{n},y_{n}) \) into
+an object \( x_{n} \) that is very nonrandom (when randomness is measured using
+the test \( f_{\mu} \)).
+ \end{proof}
+In the example, we have the abnormal situation that a pair is random but
+one of its elements is nonrandom.
+Therefore even if we would not insist on universality, the test 
+\( \exp(-\log\mu(x) - K(x)) \) is unsatisfactory.
+
+Looking into the reasons of the nonconservation in the example,
+we will notice that it could only have happened because the 
+test \( f_{\mu} \) is too special.
+The fact that \( -\log (\pi\mu)(x_{n}) - K(x_{n}) \) is large should show that 
+the pair \( (x_{n},y_{n}) \) can be enclosed into the ``simple'' set
+\( \{x_{n}\} \times \bY \) of small probability; unfortunately, 
+this observation does not reflect on 
+\( -\log\mu(x,y) - K(x,y) \) (it does for computable \( \mu \)).
+ 
+It is a natural idea to modify equation~\eqref{eq:test-charac-fin-cpt}
+in such a way that the complexity \( K(x) \) is replaced with \( K(x \mvert \mu) \).
+However, this expression must be understood properly.
+We need to use the definition of \( K(x) \) as \( -\log\m(x) \) directly, and not 
+as prefix complexity.
+
+Let us mention the following easy fact:
+
+% Gacs source line 6678
+ \begin{proposition}\label{propo:H/mu-computable}
+  \uses{our:m-cond, def:m, thm:univsem, our:lsc-props}
+If \( \mu \) is a computable measure then \( K(x \mvert \mu) \eqa K(x) \).
+The constant in \( \eqa \) depends on the description complexity of \( \mu \).
+ \end{proposition}
+
+\begin{formalization}
+Planned, with the constant depending on $\mu$. At a computable $\mu$, $\m(x \mvert \mu)$ is lower
+semicomputable in $x$ (Theorem~\ref{our:lsc-props}(d)), hence $\lem\m(x)$; and $\m(x)$, constant
+in $\mu$, is lower semicomputable in $(x,\mu)$, hence $\lem\m(x \mvert \mu)$.
+\end{formalization}
+
+% Gacs source line 6683
+ \begin{theorem}\label{thm:test-charac-discr}
+  \uses{def:g4.1.5, our:m-cond, thm:univ-integrable-test}
+If \( \bX \) is the discrete space \( \Sg^{*} \) then we have
+ \begin{equation}\label{eq:test-charac-discr}
+   \d_{\mu}(x) \eqa -\log\mu(x) - K(x \mvert \mu).
+ \end{equation}
+ \end{theorem}
+
+\begin{formalization}
+Planned over $\dS$, as $\t_{\mu}(x)\eqm\m(x \mvert \mu)/\mu(x)$ in $\clint{0}{\infty}$. For a
+computable $\mu$, by Proposition~\ref{propo:H/mu-computable} and the coding theorem, this is
+Theorem~2.2.1 (\texttt{canonicalIntegrableTest\_isUniversal},
+\texttt{universalSemimeasure\_div\_isUniversal}), and the proof is the same: $\mu(x)\t_{\mu}(x)$
+and $\m(x \mvert \mu)/\mu(x)$ are lower semicomputable in $(x,\mu)$ because $\mu(x)$ is
+computable from a name of $\mu$.
+\end{formalization}
+Note that in terms of the algorithmic entropy notation introduced 
+in~\eqref{eq:alg-ent}, this theorem can be expressed as
+ \[
+   H_{\mu}(x) \eqa K(x \mvert \mu) + \log\mu(x).
+ \]
+ \begin{proof}
+  \proves{thm:test-charac-discr}
+  \uses{our:lsc-props}
+In exponential notation, equation~\eqref{eq:test-charac-discr} can be
+written as \( \t_{\mu}(x) \eqm \m(x \mvert \mu)/\mu(x) \).
+Let us prove \( \gem \) first.
+We will show that the right-hand side of this inequality is a test, and
+hence \( \lem \t_{\mu}(x) \).
+However, 
+the right-hand side is clearly lower semicomputable in \( (x, \mu) \) and
+when we ``integrate'' it (multiply it by \( \mu(x) \) and sum it), its sum is
+\( \le 1 \); thus, it is a test.
+
+Let us prove \( \lem \) now.
+The expression \( \t_{\mu}(x)\mu(x) \) is clearly lower semicomputable in
+\( (x,\mu) \), and its sum is \( \le 1 \).
+Hence, it is \( \lea \m(x \mvert \mu) \).
+ \end{proof}
+
+% Gacs source line 6711
+ \begin{remark}\label{rem:oracle-warning}
+It important not to consider relative computation with respect to \( \mu \) 
+as \emph{oracle computation} in the ordinary sense.
+Theorem~\ref{thm:neutral-meas} below will show the existence of a measure with
+respect to which every element is random.
+If randomness is defined using \( \mu \) as an oracle then we can always find
+elements nonrandom with respect to \( \mu \).
+
+For similar reasons, the proof of the Coding Theorem does not transfer to the
+function \( K(x\mvert \mu) \) 
+since an interpreter function should have the property of \df{intensionality},
+depending only on \( \mu \) and not on the sequence representing it.
+(It does transfer without problem to an oracle version of \( K^{\mu}(x) \).)
+The Coding Theorem still may hold, at least in some cases: this is currently not
+known.
+Until we know this, we cannot interpret \( K(x\mvert \mu) \) as description complexity
+in terms of interpreters and codes.
+
+(Thanks to Alexander Shen for this observation: this remark corrects
+an error in the paper~\cite{GacsUnif05}.)
+ \end{remark}
+
+
+\begin{formalization}
+This is why Definition~\ref{our:m-cond} defines $\m(x \mvert \mu)$ as the maximal semimeasure
+that is lower semicomputable in $(x,\mu)$, independently of names, and not through Chapter 3's
+oracle machines (\texttt{KPrel}), whose value may depend on the name. Theorem~\ref{our:oracle-bound}
+records the inequality between the two that does hold.
+\end{formalization}
+
+% Ours: the one inequality between oracle complexity and K(x | mu)
+\begin{ourtheorem}[Oracle complexity and \( K(x \mvert \mu) \)]\label{our:oracle-bound}
+  \uses{our:m-cond, our:measure, our:lsc-props}
+Let \( \bX \) be \( \dS \) or \( \dB^{\dN} \).
+There is a constant \( c \) such that for every measure \( \mu\in\cM(\bX) \), every name \( A \)
+of \( \mu \) and every string \( x \),
+ \[
+   K^{A}(x) \le K(x \mvert \mu) + c,
+ \]
+where \( K^{A}(x) \) is the prefix complexity of \( x \) relative to the oracle \( A \).
+\end{ourtheorem}
+
+\begin{formalization}
+Planned. $K^{A}(x)$ is Chapter 3's \texttt{KPrel V A x} for an optimal oracle machine
+\texttt{V} (\texttt{IsOptimalOracle}, \texttt{exists\_isOptimalOracle}). Proof: by
+Theorem~\ref{our:lsc-props}(a), finite prefixes of $A$ yield lower bounds for
+$\m(x \mvert \mu)$ that are stable under extension of the prefix. Issued as requests to the
+relativized Kraft--Chaitin coder \texttt{exists\_oracleMachine\_of\_requests}, and cut off where
+their Kraft sum would exceed 1 (which does not happen along a name), they give the bound. The
+reverse inequality cannot be expected (Remark~\ref{rem:oracle-warning}). Nothing else in the
+chapter uses this theorem.
+\end{formalization}
+
+
+\subsection{Non-discrete spaces}
+For non-discrete spaces, unfortunately, we can only provide a less
+intuitive expression.
+
+% Gacs source line 6738
+ \begin{proposition}\label{thm:test-charac}
+  \notready
+let \( \bX=(X, d, D, \ag) \) be a complete
+computable metric space, and let \( \cE \) be the enumerated set of bounded
+Lipschitz functions introduced in~(A.1.3), 
+but for the space \( \bM(\bX) \times \bX \).
+The uniform test of randomness \( \t_{\mu}(x) \), can be expressed as
+ \begin{equation}\label{eq:test-charac}
+  \t_{\mu}(x) \eqm 
+  \sum_{f \in \cE}f(\mu,x)\frac{\m(f \mvert \mu)}{\mu^{y} f(\mu, y)}.
+ \end{equation}
+ \end{proposition}
+
+\begin{formalization}
+Not planned: the sum ranges over the bounded Lipschitz functions $\cE$ of a general computable
+metric space (A.1.3).
+\end{formalization}
+ \begin{proof}
+  \proves{thm:test-charac}
+  \notready
+For \( \gem \),
+we will show that the right-hand side of the inequality is a test, and
+hence \( \lem \t_{\mu}(x) \).
+For simplicity, we skip the notation about the enumeration of \( \cE \) and
+treat each element \( f \) as its own name.
+Each term of the sum is clearly lower semicomputable in
+\( (f, x, \mu) \), hence the sum is lower semicomputable in \( (x, \mu) \).
+It remains to show that the \( \mu \)-integral of the sum is \( \le 1 \).
+But, the \( \mu \)-integral of the generic term is \( \le \m(f \mvert \mu) \), and
+the sum of these terms is \( \le 1 \) by the definition of the function
+\( \m(\cdot \mvert \cdot) \).
+Thus, the sum is a test.
+
+For \( \lem \), note that \( (\mu,x) \mapsto \t_{\mu}(x) \), 
+as a lower semicomputable function, is the supremum of functions in \( \cE \).
+Denoting their differences by \( f_{i}(\mu,x) \),
+we have \( \t_{\mu}(x) = \sum_{i} f_{i}(\mu,x) \).
+The test property implies \( \sum_{i} \mu^{x} f_{i}(\mu,x) \le 1 \).
+Since the function \( (\mu,i) \mapsto \mu^{x} f_{i}(\mu,x) \) is lower
+semicomputable, this implies \( \mu^{x} f_{i}(\mu,x) \lem \m(i \mvert \mu) \), and
+hence 
+ \[
+ f_{i}(\mu,x) \lem f_{i}(\mu,x) \frac{\m(i \mvert \mu)}{\mu^{x} f_{i}(\mu,x)}.
+ \]
+It is easy to see that for each \( f\in\cE \) we have
+ \[
+   \sum_{i : f_{i} = f} \m(i \mvert \mu) \le \mu(f \mvert \mu),
+ \]
+which leads to~\eqref{eq:test-charac}.
+ \end{proof}
+
+ \begin{remark}\label{rem:test-charac-lb}
+If we only want the \( \gem \) part of the result, then \( \cE \) can be
+replaced with any enumerated computable sequence of bounded computable
+functions.
+ \end{remark}
+
+
+  \subsection{Infinite sequences}
+
+In case of the space of infinite sequences and a computable measure,
+Theorem~\ref{thm:defic-charac-cpt-seqs} gives a characterization of
+randomness in terms of complexity.
+This theorem does not seem to transfer to a more general situation, but
+under some conditions, at least parts of it can be extended.
+
+For arbitrary measures and spaces, we can say a little less:
+
+% Gacs source line 6798
+ \begin{proposition}\label{propo:test-charac-seq-lb}
+  \uses{def:g4.1.5, our:m-cond, thm:defic-charac-cpt-seqs}
+For all measures \( \mu\in\cM_{R}(X) \), 
+for the deficiency of randomness \( \d_{\mu}(x) \), we have
+ \begin{equation}\label{eq:defic-ineq-seq}
+ \d_{\mu}(x) \gea \sup_{n}\Paren{-\log \ol\mu(x^{\le n}) - K(x^{\le n} \mvert \mu)}.
+ \end{equation}
+ \end{proposition}
+
+\begin{formalization}
+Planned over $\dB^{\dN}$, where the cells $\Gg_{s}$ are the cylinders, $\ol\mu = \mu$ for a
+probability measure, and $\cM_{1}(X)$ is Definition~\ref{our:measure}. It generalizes the
+$\gea$ half of Theorem~2.3.4 (\texttt{canonicalSeqTest\_isIntegrable}) to noncomputable $\mu$,
+with $K(\cdot \mvert \mu)$ in place of $K$.
+\end{formalization}
+ \begin{proof}
+  \proves{propo:test-charac-seq-lb}
+  \uses{our:lsc-props}
+  Consider the function
+ \[
+ f_{\mu}(x) = \sum_{s} 1_{\Gg_{s}}(x) \frac{\m(s \mvert \mu)}{\ol\mu(\Gg_{s})}
+  = \sum_{n} \frac{\m(x^{\le n} \mvert \mu)}{\ol\mu(x^{\le n})}
+  \ge \sup_{n} \frac{\m(x^{\le n} \mvert \mu)}{\ol\mu(x^{\le n})}.
+ \]
+The function \( (\mu,x) \mapsto f_{\mu}(x) \) 
+is clearly lower semicomputable and satisfies
+\( \mu^{x} f_{\mu}(x) \le 1 \), and hence 
+ \[
+  \d_{\mu}(x) \gea \log f(x) \gea 
+   \sup_{n}\Paren{-\log\ol\mu(x^{\le n}) - K(x^{\le n} \mvert \mu)}.
+ \]
+ \end{proof}
+
+% Gacs source line 6821
+\begin{definition}
+  \label{def:g4.6.8}
+  \uses{our:measure}
+Let \( \cM_{R}(X) \) be the set of measures \( \mu \) with \( \mu(X)=R \).  
+\end{definition}
+
+\begin{formalization}
+In the plan $R = 1$, and $\cM_{1}(X)$ is Definition~\ref{our:measure}.
+\end{formalization}
+
+We will be able to prove the \( \gea \) part of the statement of
+Theorem~\ref{thm:defic-charac-cpt-seqs} in a more general
+space, and without assuming computability.
+Assume that a separating sequence \( b_{1},b_{2},\dots \) is given as defined
+in Subsection~\ref{subsec:cells}, along with the set \( X^{0} \).
+For each \( x \in X^{0} \), the binary sequence \( x_{1},x_{2},\dots \) 
+has been defined.
+Let
+ \begin{align*}
+  \ol\mu(\Gg_{s}) &= R  - \sum\setof{\mu(\Gg_{s'}) : \len{s}=\len{s'},\;s'\ne s}.
+ \end{align*}
+Then \( (s,\mu)\mapsto \mu(\Gg_{s}) \) is lower semicomputable, and 
+\( (s,\mu)\mapsto \ol\mu(\Gg_{s}) \) is upper semicomputable.
+And, every time that the functions \( b_{i}(x) \) form a partition
+with \( \mu \)-continuity, we have \( \ol\mu(\Gg_{s})=\mu(\Gg_{s}) \) for all \( s \).
+
+% Gacs source line 6841
+ \begin{theorem}\label{thm:defic-charac-compact}
+  \uses{def:g4.6.8, def:g4.1.5, thm:defic-charac-cpt-seqs}
+Suppose that the space \( X \) is effectively compact.
+Then for all computable measures \( \mu\in\cM_{R}^{0}(X) \), 
+for the deficiency of randomness \( \d_{\mu}(x) \), 
+the characterization~\eqref{eq:defic-charac-seq} holds.
+ \end{theorem}
+
+\begin{formalization}
+Planned only for $X = \dB^{\dN}$ with the cylinders as cells ($X^{0} = X$, $\cM^{0}_{1} = \cM$);
+general effectively compact spaces need Section~\ref{subsec:cells} and are out of scope. There it
+is Theorem~2.3.4, formalized in Chapter 2 (\texttt{universalSeqTest\_equiv}) for Chapter 2's
+universal test. The plan adds that for computable $\mu$ the uniform test $\t_{\mu}$ agrees with
+that test up to a constant factor: each is lower semicomputable in $\xi$ and a $\mu$-test, so
+each dominates the other (Corollary~\ref{coroll:trim} in one direction).
+\end{formalization}
+ \begin{proof}
+  \proves{thm:defic-charac-compact}
+  \uses{propo:test-charac-seq-lb, coroll:trim, thm:univ-integrable-test-seq}
+The proof of part \( \gea \) of the inequality follows directly from
+Proposition~\ref{propo:test-charac-seq-lb}, just as in the proof of 
+Theorem~\ref{thm:defic-charac-cpt-seqs}.
+
+The proof of \( \lea \) is also similar to the proof of that theorem.
+The only part that needs to be reproved is the statement that
+for every lower semicomputable function \( f \) over \( X \),
+there are computable sequences \( y_{i}\in\dN^{*} \) and
+\( q_{i}\in\dQ \) with \( f(x) = \sup_{i} q_{i} 1_{y_{i}}(x) \).
+This follows now, since according to
+Proposition~\ref{propo:compact-cell-basis}, the cells \( \Gg_{y} \) form a basis of
+the space \( X \).
+ \end{proof}
+
+
+\subsection{Bernoulli tests}
+
+In this part, we will give characterize Bernoulli sequences in terms of their
+complexity growth.
+
+Recall Definition~\ref{def:combinat-Bernoulli}:
+A function \( f:\dB^{*}\to\dR \) is a combinatorial Bernoulli test if
+ \begin{alphenum}
+  \item It is lower semicomputable.
+  \item It is monotonic with respect to the prefix relation.
+  \item For all \( 0\le k\le n \) we have \( \sum_{x\in\dB(n,k)} f(x) \le \binom{n}{k} \).
+ \end{alphenum}
+According to Theorem~\ref{thm:combinat-Bernoulli}, a 
+sequence \( \xi \) is nonrandom with respect to all Bernoulli measures if and
+only if \( \sup_{n}b(\xi^{\le n})=\infty \), where \( b(x) \) is a combinatorial
+Bernoulli test.
+
+We need some definitions.
+
+% Gacs source line 6882
+\begin{definition}
+  \label{def:g4.6.9}
+  \uses{def:semicomputability}
+For a finite or infinite sequence \( x \) let \( S_{n}(x)=\sum_{i=1}^{n}x(i) \).
+
+For \( 0\le p\le 1 \) and integers \( 0\le k\le n \), 
+denote \( B_{p}(n,k)=\binom{n}{k}p^{k}(1-p)^{n-k} \).
+
+An upper semicomputable function \( D:\dN^{2}\to\dN \), defined for \( n\ge 1 \),
+\( 0\le k\le n \) will be called a \df{gap function} if
+ \begin{align}\label{eq:dg-bd}
+  \sum_{n\ge 1}\sum_{k=0}^{n}B_{p}(n,k)2^{-D(n,k)} \le 1
+ \end{align}
+holds for all \( 0\le p\le 1 \).
+A gap function \( D(n,k) \) is \df{optimal} if for every other gap 
+function \( D'(n,k) \) there is a \( c_{D'} \) with \( D(n,k)\le D'(n,k)+c_{D'} \).
+\end{definition}
+
+\begin{formalization}
+Planned. Only numbers are involved: $D$ is upper semicomputable on $\dN^{2}$ in Chapter 1's sense,
+and~\eqref{eq:dg-bd} is required for every real $p\in\clint{0}{1}$.
+\end{formalization}
+
+% Gacs source line 6898
+ \begin{proposition}
+  \label{prop:g4.6.10}
+  \uses{def:g4.6.9}
+There is an optimal gap function \( D(n,k)\lea K(n) \).
+ \end{proposition}
+
+\begin{formalization}
+Planned. The trimming needs to recognize $\sup_{p}\sum B_{p}(n,k)2^{-D(n,k)}<1$ for finite sums;
+the supremum of a polynomial in $p$ over $\clint{0}{1}$ is computable.
+\end{formalization}
+ \begin{proof}
+  \proves{prop:g4.6.10}
+  \uses{thm:trim, l:kraft}
+The existence is proved using the technique of Theorem~\ref{thm:trim}.
+For the inequality it is sufficient to note that \( K(n) \) is a gap function.
+Indeed, we have
+ \begin{align*}
+  \sum_{n\ge 1}\sum_{k=0}^{n}B_{p}(n,k)2^{-K(n)} =\sum_{n\ge 1}2^{-K(n)}\le 1.
+ \end{align*}
+ \end{proof}
+
+% Gacs source line 6911
+\begin{definition}
+  \label{def:g4.6.11}
+  \uses{prop:g4.6.10}
+Let us fix an optimal gap function and denote it by \( \Dg(n,k) \).
+\end{definition}
+
+Now we can state the test characterization theorem for Bernoulli tests.
+
+% Gacs source line 6917
+ \begin{theorem}
+  \label{thm:g4.6.3}
+  \uses{def:g4.6.11, def:g4.2.14, our:m-cond}
+Denoting by \( b(\xi) \) the universal class test for the Bernoulli sequences, we
+have \( b(\xi) \eqm \ol b(\xi) \),
+where
+  \begin{align*}
+  \log \ol b(\xi) = \sup_{n}\log\binom{n}{k}-K(\xi^{\le n}\mvert n,k,\Dg(n,k))-\Dg(n,k),
+ \end{align*}
+with \( k=S_{n}(\xi) \).
+ \end{theorem}
+
+\begin{formalization}
+Planned. Everything here is on strings and numbers: the conditions $(n,k,\Dg(n,k))$ are discrete,
+and $\m(y \mvert n,k,\Dg(n,k))$ is Chapter 1's conditional universal semimeasure
+(Definition~\ref{our:m-cond}(b) with a string condition). The decomposition
+$b'(\xi) = \sup_{i}2^{k_{i}}1_{y_{i}}(\xi)$ is the one Chapter 2 made decidable for
+Theorem~2.3.4 (first hits of dyadic levels, \texttt{LevinSchnorr.lean}).
+\end{formalization}
+ \begin{proof}
+  \proves{thm:g4.6.3}
+  \uses{propo:univ-test-gener, thm:combinat-Bernoulli}
+Let \( \dg(n,k) = 2^{-\Dg(n,k)} \).
+ \begin{claim}\label{claim:gap}
+Consider lower semicomputable functions \( \gm:\dB^{*}\to\dR_{+} \) such that
+for all \( n,k \) we have
+ \begin{align*}
+   \sum_{y\in\dB(n,k)}\gm(y) \le 2^{-\Dg(n,k)}.
+ \end{align*}
+Among these functions there is one
+that is optimal (maximal to within a multiplicative constant).
+Calling it \( \dg(y) \) we have
+ \begin{align*}
+  \dg(y) \eqm \dg(n,k)\cdot\m(y\mvert n,k,\Dg(n,k)).
+ \end{align*}
+ \end{claim}
+Thus, the right-hand side is equal, within a multiplicative constant,
+to a lower semicomputable function of \( y \).
+ \begin{proof}
+  \proves{claim:gap}
+This follows immediately from Proposition~\ref{propo:univ-test-gener}.
+with \( \nu=\# \) (the counting measure) over the sets \( \dB(n,k) \).
+ \end{proof}
+Let us show \( \ol b(\xi)\lem b(\xi) \).
+We have with \( k=S_{n}(\xi) \) in the first line:
+ \begin{align*}
+ \ol b(\xi) &=\sup_{n\ge 1}\binom{n}{k}\m(\xi^{\le n}\mvert n,k,\Dg(n,k))\dg(n,k)
+\\ &= \sup_{n\ge 1}\sum_{k=0}^{n}\binom{n}{k}\dg(n,k)
+     \sum_{y\in\dB(n,k)}1_{y}(\xi)\m(y\mvert n,k,\Dg(n,k))
+\\ &\le \sum_{n\ge 1}\sum_{k=0}^{n}\binom{n}{k}
+     \sum_{y\in\dB(n,k)}1_{y}(\xi)\dg(n,k)\m(y\mvert n,k,\Dg(n,k))
+\\ &\eqm \sum_{n\ge 1}\sum_{k=0}^{n}\binom{n}{k}
+     \sum_{y\in\dB(n,k)}1_{y}(\xi)\dg(y),
+ \end{align*}
+using the notation of Claim~\ref{claim:gap} above.
+Let \( t(\xi) \) denote the right-hand side here, which is thus
+a lower semicomputable function.
+We have for all \( p \):
+ \begin{align*}
+   B_{p}^{\xi}t(\xi) &\eqm \sum_{n\ge 1}\sum_{k=0}^{n}B_{p}(n,k)\dg(n,k)
+ \sum_{y\in\dB(n,k)}\m(y\mvert n,k,\Dg(n,k)) \le 1,
+ \end{align*}
+so \( t(\xi)\gem \ol b(\xi) \) is a Bernoulli test, showing \( \ol b(\xi)\lem b(\xi) \).
+
+To show \( b(\xi)\lem \ol b(\xi) \) we will
+follow the method of the proof of
+Theorem~\ref{thm:defic-charac-cpt-seqs}.
+Replace \( b(\xi) \) with a rougher version:
+ \[
+ b'(\xi) = \frac{1}{2}\max \setof{2^{n} : 2^{n} < b(\xi)},
+ \]
+then we have \( 2 b'<b \).
+There are computable sequences \( y_{i}\in\dB^{*} \) and \( k_{i} \in \dN \) with
+\( b'(\xi) = \sup_{i}\; 2^{k_{i}} 1_{y_{i}}(\xi) \)
+with the property that if \( i<j \) and \( 1_{y_{i}}(\xi)=1_{y_{j}}(\xi)=1 \) then
+\( k_{i}<k_{j} \).
+As in the imitated proof, we have
+\( 2b'(\xi) \ge \sum_{i} 2^{k_{i}} 1_{y_{i}}(\xi) \).
+The function \( \gm(y)=\sum_{y_{i}=y}2^{k_{i}} \) is lower semicomputable.
+We have
+\begin{align}
+ b\ge 2b'(\xi)\ge\sum_{i} 2^{k_{i}} 1_{y_{i}}(\xi)  = \sum_{y\in\dN^{*}}1_{y}(\xi)\gm(y)
+ = \sum_{n}\sum_{k=0}^{n}\sum_{y\in\dB(n,k)}1_{y}(\xi)\gm(y).
+\label{eq:gamma-expr}
+ \end{align}
+By Theorem~\ref{thm:combinat-Bernoulli} we can assume
+\( \sum_{y\in\dB(n,k)}\gm(y)\le \binom{n}{k} \).
+Let
+ \begin{alignat*}{3}
+           &\dg'(y)    &&= \gm(y)\binom{n}{k}^{-1} \le 1,
+\\      &\dg'(n,k) &&=  \sum_{y\in\dB(n,k)}\dg'(y).
+ \end{alignat*}
+Since \( 1\ge B_{p}b \ge B_{p}(2 b') \) for all \( p \), we have 
+ \begin{align*}
+      1 &\ge \sum_{n}\sum_{k=0}^{n}\sum_{y\in\dB(n,k)}\gm(y)B_{p}^{\xi}1_{y}(\xi)
+            = \sum_{n}\sum_{k=0}^{n}p^{k}(1-p)^{n-k}\sum_{y\in\dB(n,k)}\gm(y)
+\\     &= \sum_{n}\sum_{k=0}^{n}B_{p}(n,k)\sum_{y\in\dB(n,k)}\dg'(y)
+          = \sum_{n}\sum_{k=0}^{n}B_{p}(n,k)\dg'(n,k).
+ \end{align*}
+Thus \( \dg'(n,k) \) is a gap function, hence \( \dg'(n,k) \lem 2^{-\Dg(n,k)} \),
+and by Claim~\ref{claim:gap} we have 
+ \begin{align*}
+ \gm(y)\binom{n}{k}^{-1}&=\dg'(y)\lem \dg(y)
+   \eqm\dg(n,k)\cdot\m(y\mvert n,k,\Dg(n,k)).
+ \end{align*}
+Substituting back into~\eqref{eq:gamma-expr} finishes the proof of
+\( b(\xi)\lem \ol b(\xi) \).
+ \end{proof}
+
+
+\section{Cells}\label{subsec:cells}
+
+This section allows to transfer some of the results
+on sequence spaces to more general spaces, by encoding the elements into
+sequences.
+The reader who is only interested in sequences can skip this section.
+
+\begin{formalization}
+Not planned. Cells encode the points of a general space as binary sequences. In the plan the
+space already is $\dB^{\dN}$, whose canonical cells are the cylinders, with $X^{0} = X$
+(Examples~\ref{example:cells}, part 1), so nothing in this section is needed. Its nodes are
+marked not ready.
+\end{formalization}
+
+\subsection{Partitions}
+
+The coordinates of the sequences into which we want to encode our elements will
+be obtained via certain partitions.
+
+Recall from Definition~A.2.33 that 
+a measurable set \( A \) is said to be a \df{\( \mu \)-continuity set} if 
+\( \mu(\partial A)=0 \) where \( \partial A \) is the boundary of \( A \).
+
+% Gacs source line 7030
+ \begin{definition}[Continuity partition]
+  \label{def:g4.7.1}
+  \notready
+Let \( f:X\to\dR \) be a bounded computable function, and let
+\( \ag_{1}<\dots<\ag_{k} \) be rational numbers,
+and let \( \mu \) be a computable measure with the property
+that \( \mu f^{-1}(\ag_{j})=0 \) for all \( j \).
+
+
+In this case, we will say that \( \ag_{j} \) are \( \mu \)-\df{continuity points} of \( f \).
+Let \( \ag_{0}=-\infty \), \( \ag_{k+1}=\infty \), and for \( j=0,\dots,k \), let
+Let \( U_{j} = f^{-1}((j,j+1)) \).
+The sequence of disjoint 
+computably enumerable open sets \( (U_{0},\dots,U_{k}) \) will be called the
+\df{partition generated by} \( f,\ag_{1},\dots,\ag_{k} \).
+
+If we have several partitions \( (U_{i0},\dots,U_{i,k}) \), 
+generated by different functions \( f_{i} \) (\( i=1,\dots,m \))
+and cutoff sequences \( (\ag_{ij}: j=1,\dots,k_{i}) \)  made up of
+\( \mu \)-continuity points of \( f_{i} \)
+then we can form a new partition generated by all possible intersections
+ \[
+  V_{j_{1},\dots,j_{n}} = U_{1,j_{1}}\cap \dots \cap U_{m,j_{m}}.
+ \]
+A partition of this kind will be called a \df{continuity partition}.
+The sets \( V_{j_{1},\dots,j_{n}} \) will be called the \df{cells} of this
+partition. 
+ \end{definition}
+
+The following is worth noting.
+
+% Gacs source line 7059
+ \begin{proposition}\label{propo:reg-partit-meas-cptable}
+  \notready
+In a partition as given above, 
+the values \( \mu V_{j_{1},\dots,j_{n}} \) are computable
+from the names of the functions \( f_{i} \) and the cutoff points \( \ag_{ij} \).
+ \end{proposition}
+ \begin{proof}
+  \proves{propo:reg-partit-meas-cptable}
+  \notready
+Straightforward.
+ \end{proof}
+
+Let us proceed to defining cells.
+
+% Gacs source line 7070
+ \begin{definition}[Separating sequence]
+  \label{def:g4.7.3}
+  \notready
+Assume that a computable sequence of functions 
+\( b_{1}(x),b_{2}(x),\dots \) over \( X \) is given,
+with the property that for every pair 
+\( x_{1},x_{2}\in X \) with \( x_{1}\ne x_{2} \), there is a \( j \)
+with \( b_{j}(x_{1})\cdot b_{j}(x_{2}) < 0 \).
+Such a sequence will be called a \df{separating sequence}.
+Let us give the correspondence between the set \( \dB^{\dN} \)
+of infinite binary sequences and elements of the set
+ \[
+  X^{0} = \setof{x\in X: b_{j}(x)\ne 0,\;j=1,2,\dots}.
+ \]
+For a binary string 
+\( s_{1}\dotsm s_{n} = s\in\dB^{*} \), let
+ \[
+   \Gg_{s}
+ \]
+be the set of elements of \( X \) with the property that for
+\( j=1,\dots,n \), if \( s_{j}=0 \) then \( b_{j}(\og) < 0 \), otherwise
+\( b_{j}(\og)>0 \).
+
+The separating sequence will be called \( \mu \)-\df{continuity} sequence
+if \( \mu(X^{0})=0 \).
+ \end{definition}
+
+This correspondence has the following properties.
+ \begin{alphenum}
+  \item \( \Gg_{\Lg}=X \).
+  \item For each \( s\in \dB \), the sets \( \Gg_{s0} \) and 
+\( \Gg_{s1} \) are disjoint and their union is contained in \( \Gg_{s} \).
+  \item For \( x\in X^0 \), we have \( \{x\} = \bigcap_{x\in\Gg_{s}} \Gg_{s} \).
+ \end{alphenum}
+
+% Gacs source line 7103
+ \begin{definition}[Cells]
+  \label{def:g4.7.4}
+  \notready
+If string \( s \) has length \( n \) then \( \Gg_{s} \) will be called a \df{canonical
+\( n \)-cell}, or simply canonical cell, or \( n \)-cell.
+From now on, whenever \( \Gg \) denotes a subset of \( X \), it means a
+canonical cell.
+We will also use the notation
+ \[
+   \len{\Gg_{s}}=\len{s}.
+ \]
+ \end{definition}
+
+The three properties above say that if we restrict ourselves to the set
+\( X^{0} \) then the canonical cells behave somewhat like binary subintervals:
+they divide \( X^{0} \) in half, then each half again in half, etc.  
+Moreover, around each point, these canonical cells become ``arbitrarily
+small'', in some sense (though, they may not be a basis of neighborhoods).
+It is easy to see that if \( \Gg_{s_1},\Gg_{s_2} \) are two canonical
+cells then they either are disjoint or one of them contains the other.
+If \( \Gg_{s_1}\sbs\Gg_{s_2} \) then \( s_2 \) is a prefix of \( s_1 \).
+If, for a moment, we write \( \Gg^0_s=\Gg_s\cap X^0 \) then we have the
+disjoint union \( \Gg^0_s=\Gg^0_{s0}\cup\Gg^0_{s1} \).
+
+Let us use the following notation.
+
+% Gacs source line 7127
+ \begin{definition}
+  \label{def:g4.7.5}
+  \notready
+For an \( n \)-element binary string \( s \), for \( x \in \Gg_{s} \), we will write 
+ \[
+           s = x^{\le n} =  x_1\dotsm x_n,
+\quad \mu(s) = \mu(\Gg_{s}).
+ \]
+The \( 2^n \) cells (some of them possibly empty)
+of the form \( \Gg_s \) for \( \len{s}=n \) form a partition
+ \[
+  \cP_n
+ \]
+  of \( X^0 \).
+ \end{definition}
+
+  Thus, for elements of \( X^0 \), we can talk about the \( n \)-th bit \( x_n \)
+of the description of \( x \): it is uniquely determined.
+
+ \begin{examples}\label{example:cells}\
+ \begin{enumerate}
+  \item If \( \bX \) is the set of infinite binary sequences with its usual
+topology, the functions \( b_{n}(x) = x_{n}-1/2 \) generate the usual
+cells, and \( \bX^{0}=\bX \).
+  \item If \( \bX \) is the interval \( \clint{0}{1} \), let 
+\( b_{n}(x) = -\sin(2^{n}\pi x) \).
+Then cells are open 
+intervals of the form \( \opint{k\cdot 2^{-n}}{(k+1)\cdot 2^{n}} \),
+the correspondence between infinite binary strings
+and elements of \( X^0 \) is just the usual representation of \( x \) as the
+binary decimal string \( 0.x_{1}x_{2}\dots \).
+ \end{enumerate}
+ \end{examples}
+
+When we fix canonical cells,  
+we will generally assume that the partition chosen is also
+``natural''.
+The bits \( x_1,x_2,\ldots \) could contain information about the
+point \( x \) in decreasing order of importance from a macroscopic
+point of view. 
+For example, for a container of gas, the first few bits may
+describe, to a reasonable degree of precision, the amount of gas in
+the left half of the container, the next few bits may describe the
+amounts in each quarter, the next few bits may describe the
+temperature in each half, the next few bits may describe again the
+amount of gas in each half, but now to more precision, etc.
+From now on, whenever \( \Gg \) denotes a subset of \( X \), it means a
+canonical cell.
+From now on, for elements of \( X^0 \), we can talk about the \( n \)-th
+bit \( x_n \) of the description of \( x \): it is uniquely determined.
+
+The following observation will prove useful.
+
+% Gacs source line 7178
+ \begin{proposition}\label{propo:compact-cell-basis}
+  \notready
+Suppose that the space \( \bX \) is effectively compact\footnote{It was noted by
+  Hoyrup and Rojas that the qualification ``effectively'' is necessary here.}
+ and we have a separating sequence \( b_{i}(x) \) as given above.
+Then the cells \( \Gg_{s} \) form a basis of the space \( \bX \).
+ \end{proposition}
+ \begin{proof}
+  \proves{propo:compact-cell-basis}
+  \notready
+We need to prove that for every ball \( B(x,r) \), the there is a cell
+\( x\in\Gg_{s}\sbs B(x,r) \).
+Let \( C \) be the complement of \( B(x,r) \).
+For each point \( y \) of \( C \), there is an \( i \) such that
+\( b_{i}(x)\cdot b_{i}(y) < 0 \).
+In this case, let \( J^{0} = \setof{z: b_{i}(z) < 0} \),
+\( J^{1} = \setof{z: b_{i}(z) > 0} \).
+Let \( J(y)=J^{p} \) such that \( y\in J^{p} \).
+Then \( C \sbs \bigcup_{y} J(y) \), and compactness implies that there is a
+finite sequence \( y_{1},\dots,y_{k} \) with 
+\( C \sbs \bigcup_{j=1}^{k} J(y_{j}) \).
+Clearly, there is a cell 
+ \[
+  x \in \Gg_{s} \sbs B(x,r) \xcpt \bigcup_{j=1}^{k} J(y_{j}).
+ \]
+ \end{proof}
+
+
+\subsection{Computable probability spaces}
+
+If a separating sequence is given in advance, we may
+restrict attention to the class of measures that make our sequence a
+\( \mu \)-continuity sequence:
+
+% Gacs source line 7209
+ \begin{definition}
+  \label{def:g4.7.8}
+  \notready
+Let \( \cM^{0}(X) \) be the set of those probability measures \( \mu \)
+in \( \cM(X) \) for which \( \mu(X \xcpt X^{0})=0 \).
+ \end{definition}
+
+On the other hand, for each computable measure \( \mu \),
+a computable separating sequence can be constructed that is a \( \mu \)-continuity
+sequence.
+Recall that \( B(x,r) \) is the ball of center \( x \) and radius \( r \).
+Let \( D=\{s_{1},s_{2},\dots\}=\{\ag(1),\ag(2),\dots\} \) 
+be the canonical enumeration of the canonical dense set \( D \).
+
+% Gacs source line 7221
+\begin{theorem}[Hoyrup-Rojas]\label{thm:continuity-balls}
+  \notready
+There is a sequence of uniformly computable reals \( (r_n)_{n\in \dN} \) such
+that \( (B(s_{i},r_{n}))_{i,n} \) is a basis of balls that are \( \mu \)-continuity sets.
+This basis is constructively equivalent to the original one, consisting of all 
+balls \( B(s_{i},r) \), \( r\in\dQ \).
+\end{theorem}
+
+% Gacs source line 7228
+ \begin{corollary}
+  \label{cor:g4.7.9}
+  \notready
+There is a computable separating sequence with the \( \mu \)-continuity property.
+ \end{corollary}
+ \begin{proof}
+  \proves{cor:g4.7.9}
+  \notready
+Let us list all balls \( B(s_{i},r_{n}) \) into a single sequence
+\( B(s_{i_{k}},r_{n_{k}}) \).
+The functions 
+ \begin{align*}
+  b_{k}(x)=d(s_{i_{k}},x)-r_{n_{k}}
+ \end{align*}
+give rise to the desired sequence.
+ \end{proof}
+
+For the proof of the theorem, we use some preparation.
+Recall from Definition~A.2.5 that an atom is a point with positive
+measure.
+
+% Gacs source line 7245
+\begin{lemma}\label{lem:zero_measure_points}
+  \notready
+Let \( X \) be \( \dR \) or \( \dR^+ \) or \( \clint{0}{1} \). 
+Let \( \mu \) be a computable probability measure on \( X \). 
+Then there is a sequence of uniformly computable reals \( (x_{n})_{n} \)
+which is dense in \( X \) and contains no atoms of \( \mu \).
+\end{lemma}
+\begin{proof}
+  \proves{lem:zero_measure_points}
+  \notready
+Let \( I \) be a closed rational interval. 
+We construct \( x\in I \) with \( \mu(\{x\})=0 \). 
+To do this, we construct inductively a nested sequence of
+closed intervals \( J_k \) of measure \( <2^{-k+1} \), with \( J_0=I \). 
+Suppose \( J_k=\clint{a}{b} \) has been constructed, with \( \mu(J_k)<2^{-k+1} \). 
+Let
+\( m=(b-a)/3 \): one of the intervals \( \clint{a}{a+m} \) and \( \clint{b-m}{b} \) must
+have measure \( <2^{-k} \), and we can find it effectively---let it be \( J_{k+1} \).
+
+From a constructive enumeration \( (I_n)_n \) of all the dyadic intervals, we
+can construct \( x_n\in I_n \) uniformly.
+ \end{proof}
+
+% Gacs source line 7265
+\begin{corollary}\label{coroll:sequence}
+  \notready
+Let \( (\bX,\mu) \) be a computable metric space with a computable measure
+and let \( (f_i)_i \) be a sequence of uniformly computable real
+valued functions on \( X \). 
+Then there is a sequence of uniformly computable reals \( (x_n)_n \) that is
+dense in \( \dR \) and such that each \( x_{n} \) is a \( \mu \)-continuity point of each
+\( f_{i} \). 
+\end{corollary}
+\begin{proof}
+  \proves{coroll:sequence}
+  \notready
+Consider the uniformly computable measures \( \mu_i=\mu\circ f_i^{-1} \) and define
+\( \nu=\sum_i2^{-i}\mu_i \).
+It is easy to see that \( \nu \) is a computable measure and then, by
+Lemma~\ref{lem:zero_measure_points}, there is a sequence of uniformly computable
+reals \( (x_n)_n \) which is dense in \( \dR \) and contains no atoms of \( \nu \). 
+Since \( \nu(A)=0 \) iff \( \mu_i(A)=0 \) for all \( i \), we get \( \mu(\{f_i^{-1}(x_n)\})=0 \)
+for all \( i,n \).
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\protect\ref{thm:continuity-balls}]
+  \proves{thm:continuity-balls}
+  \notready
+Apply Corollary~\ref{coroll:sequence} to \( f_i(x)=d(s_i,x) \).
+
+Since every ball \( B(s_{i},r) \) can be expressed as a computably enumerable union of the balls
+of the type \( B(s_{i},r_{n}) \) just constructed, the two bases are constructively
+equivalent. 
+\end{proof}

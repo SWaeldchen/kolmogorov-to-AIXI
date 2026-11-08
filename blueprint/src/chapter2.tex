@@ -1,0 +1,2215 @@
+% ===========================================================================
+% Chapter 2: Randomness
+% ===========================================================================
+% Gacs source lines 2325-3756 of
+% Gacs_2021_Descriptional_Complexity_and_Randomness.tex, reproduced verbatim with
+% the author's permission.  Edits to his text: sloppypar wrappers dropped, runs of
+% blank lines collapsed, the proofs of Theorems 2.3.3, 2.3.4, 2.3.5 and Corollary
+% 2.3.30 given a title or an empty body so that the dependency graph can attach
+% them, and references to his Appendix A replaced by their printed numbers.
+% Section 4.1 (sec:cont-spaces) is referenced by label.
+%
+% The Lean formalization is Gacs_Chapter_2/Randomness/ (namespace
+% Kolmogorov.Randomness); Gacs_Chapter_2/strategy.md has the plan, the design
+% decisions and the progress log.
+%
+% Numbering: within each section his theorems run on one counter and everything
+% else on another (macros/common.tex), so every number below is the one printed in
+% his manuscript.  Numbered items he did not label carry labels <kind>:g<number>,
+% e.g. def:g2.3.15.  Statements that are ours use ourdefinition/ourtheorem (labels
+% def:ch2-..., thm:ch2-...), which have their own counter.
+
+\chapter{Randomness}
+
+Chapter 2 of G\'acs' manuscript defines randomness: for finite strings under the uniform
+distribution (Section~\ref{sec:tests}) and under a computable distribution
+(Section~\ref{sec:discrand}), and for infinite sequences. All of it is formalized in Lean,
+with two exceptions. Theorem~\ref{thm:g2.3.6} on monotone machines is planned. The general
+measure theory of Subsections 2.3.2--2.3.4 is not formalized, because Mathlib provides it
+and no result of the chapter needs it. His text is reproduced with his permission; the
+annotations, the dependency edges and the formalization notes are ours.
+
+Three conventions apply throughout.
+\begin{itemize}
+\item A test \( d \) is carried as \( t = 2^{d} \), with values in \( [0,\infty] \).
+  Universality \( d \lea d_{0} \) becomes \( t \le 2^{c} t_{0} \), and the deficiency
+  \( -\log P(x) - K(x) \) becomes \( 2^{-K(x)}/P(x) \). No logarithm appears in the Lean
+  statements.
+\item The constants \( K(d) + K(P) \) of Theorems~\ref{thm:univ-integrable-test},
+  \ref{thm:simple-rand-cons-det}, \ref{thm:g2.2.3} and~\ref{thm:univ-integrable-test-seq}
+  are formalized twice: with a constant that depends on the test and the measure, and with
+  his explicit constant, where \( K(d) \) is read through a description of \( d \)
+  (Definition~\ref{def:ch2-description}).
+\item Sequences are binary. Every statement about them is made through finite strings:
+  cylinders, open sets given by generating strings, measures by their values on cylinders,
+  tests by their values on prefixes.
+\end{itemize}
+As in Chapter~1, \( K \) is the prefix complexity of an optimal prefix interpreter \( U \)
+that every result takes as a hypothesis (\texttt{IsOptimalPrefixConditional U}).
+
+\section{Uniform distribution} \label{sec:tests}
+
+Speaking of a ``random binary string'', one generally understands
+randomness with respect to the coin-toss distribution (when the
+probability $P(x)$ of a binary sequence $x$ of length $n$ is $2^{-n}$).
+This is the only distribution considered in the present section.
+
+One can hope to distinguish sharply between random and nonrandom
+\emph{infinite sequences}.
+Indeed, an infinite binary sequence whose
+elements are 0 with only finitely many exceptions, can be considered
+nonrandom without qualification.
+This section defines randomness for finite strings.
+For a sequence $x$ of length $n$, it would be
+unnatural to fix some number $k$, declare $x$ nonrandom when its
+first $k$ elements are 0, but permit it to be random if only the
+first $k-1$ elements are 0.
+So, we will just declare some finite strings less random than others.
+For
+this, we introduce a certain real-valued function $d(x) \ge 0$ measuring
+the \df{deficiency of randomness} in the string $x$.
+The occurrence
+of a nonrandom sequence is considered an  exceptional event,
+therefore the function $d(x)$ can assume large values only with small
+probability.
+What is ``large'' and ``small'' depends only on our ``unit of measurement''.
+We require for all $n,k$
+ \begin{equation} \label{eq:testcond}
+\sum\setof{ P(x): x\in \dB^{n},\ d(x) > k } < 2^{-k},
+ \end{equation}
+saying that there be at most $2^{n-k}$ binary sequences $x$ of length
+$n$ with $d(x)>k$.
+Under this condition, we even allow $d(x)$ to take the value $\infty$.
+
+To avoid arbitrariness in the distinction between random and
+nonrandom, the function $d(x)$ must be \emph{simple}.
+We assume
+therefore that the set $\setof{ (n,k,x) : \len{x} = n,\; d(x)>k }$ is
+recursively enumerable, or, which is the same, that the function
+ \begin{align*}
+  \d : \Og\to\rint{-\infty}{\infty}
+ \end{align*}
+is lower semicomputable.
+
+% Gacs source line 2370
+ \begin{remark}
+We do not assume that the set of strings $x \in \dB^{n}$ with \emph{small}
+deficiency of randomness is enumerable, because then it would be easy
+to construct a ``random'' sequence.
+ \end{remark}
+
+% Gacs source line 2376
+\begin{definition}
+  \label{def:g2.1.2}
+  \lean{Kolmogorov.Randomness.IsMLTestUniform, Kolmogorov.Randomness.IsUniversalMLTestUniform}
+  \leanok
+  \uses{def:semicomputability}
+A lower semicomputable function $d : \dS_{2} \to \dR$ (where $\dR$ is the
+set of real numbers) is called a \df{Martin-L\"of test (ML-test)}, or a
+\df{probability-bounded test} if it satisfies~\eqref{eq:testcond}.
+
+A ML-test $d_{0}(x)$ is \df{universal} if it additively dominates all
+other ML-tests: for any other ML-test $d(x)$ there is a
+constant $c<\infty$ such that for all $x$ we have
+$d(x) < d_{0}(x) + c$.
+\end{definition}
+
+\begin{formalization}
+A test is carried as \( t = 2^{d} \), a lower semicomputable function from strings to
+\( [0,\infty] \). Condition~\eqref{eq:testcond} reads
+\( \card{\setof{x \in \dB^{n} : 2^{k} < t(x)}} \cdot 2^{k} \le 2^{n} \) for all
+\( n, k \in \dN \). It is stated with \( \le \): his text says ``at most \( 2^{n-k} \)'', and
+that is what the proof of Theorem~\ref{thm:MLcompl} uses. Universality is
+\( t \le 2^{c} t_{0} \) with \( c \in \dN \).
+\end{formalization}
+
+If a test $d_{0}$ is universal then any other test $d$ of randomness
+can discover at most by a constant amount more deficiency of
+randomness in any sequence $x$ than $d_{0}(x)$.
+Obviously, the
+difference of any two universal ML-tests is bounded by some
+constant.
+
+The following theorem reveals a simple connnection between descriptional
+complexity and a certain randomness property.
+
+% Gacs source line 2397
+ \begin{definition}
+  \label{def:g2.1.3}
+  \lean{Kolmogorov.Randomness.mlDeficiency}
+  \leanok
+  \uses{def:fixed-U}
+Let us define the following function for binary strings $x$:
+ \begin{align}\label{eq:d0}
+ d_{0}(x) = \len{x} - C(x \mvert\; \len{x}).
+ \end{align}
+ \end{definition}
+
+\begin{formalization}
+In multiplicative form: \texttt{mlDeficiency U x} \( = 2^{\len{x}} \cdot 2^{-C(x \mvert \len{x})} \),
+with the length passed to \( C \) as its binary representation.
+\end{formalization}
+
+% Gacs source line 2404
+\begin{theorem}[Martin-L\"of] \label{thm:MLcompl}
+  \lean{Kolmogorov.Randomness.mlDeficiency_isUniversalMLTestUniform, Kolmogorov.Randomness.mlDeficiency_isMLTestUniform, Kolmogorov.Randomness.mlTest_le_mlDeficiency}
+  \leanok
+  \uses{def:g2.1.2, def:g2.1.3}
+ The function $d_{0}(x)$ is a universal Martin-L\"of test.
+ \end{theorem}
+\begin{proof}
+  \proves{thm:MLcompl}
+  \leanok
+  \uses{thm:Ksemicp, thm:Kmajor}
+ Since $C(x \mvert y)$ is semicomputable from above, $d_{0}$ is
+semicomputable from below.
+The property of semicomputability holds
+for $d_{0}$ as a straightforward consequence of Theorem~\ref{thm:Ksemicp}
+Therefore $d_{0}$ is a ML-test.
+We must show that it is larger (to
+within an additive constant) than any other ML-test. Let $d$ be a
+ML-test.
+Let us define the function $F(x,y)$ to be $y - d(x)$ for
+$y = \len{x}$, and $\infty$ otherwise.
+Then $F$ is upper semicomputable, and
+satisfies~\eqref{eq:Kmajor}.
+Therefore by Theorem~\ref{thm:Kmajor}, we
+have $C(x \mvert \len{x}) \lea \len{x} - d(x)$.
+ \end{proof}
+
+\begin{formalization}
+The proof is his, through Levin's Theorem~\ref{thm:Kmajor}. In multiplicative form
+\( F(x, \len{x}) \) is the least \( m \) with \( 2^{\len{x}} < 2^{m} t(x) \). Its minimality
+gives \( 2^{F(x,\len{x})} t(x) \le 2^{\len{x}+1} \), so the constant of the theorem is one more
+than the constant of Levin's theorem.
+\end{formalization}
+
+Theorem~\ref{thm:MLcompl} says that under very general assumptions
+about randomness, those strings $x$ are random whose descriptional
+complexity is close to its maximum, $\len{x}$.
+The more ``regularities'' are
+discoverable in a sequence, the less random it is.
+However, this is
+true only of regularities which decrease the descriptional
+complexity.
+``Laws of randomness'' are regularities whose probability
+is high, for example the law of large numbers, the law of iterated
+logarithm, the arcsine law, etc.
+A random sequence will satisfy \emph{all such laws}.
+
+% Gacs source line 2437
+ \begin{example}
+The law of large numbers
+says that in most binary sequences of length $n$, the number of 0's
+is close to the numer of 1's.
+We prove this law of probability theory
+by constructing a ML-test $d(x)$ taking large values on sequences in
+which the number of 0's is far from the number of 1's.
+
+Instead of requiring~\eqref{eq:testcond} we require a somewhat stronger
+property of $d(x)$: for all $n$,
+ \begin{equation}  \label{eq:llntestcd}
+ \sum_{x\in \dB^{n}} P(x)2^{d(x)} \le 1.
+ \end{equation}
+
+From this, the inequality~\eqref{eq:testcond} follows by the following
+well-known inequality called the Markov Inequality which says the
+following.
+Let $P$ be any probability distribution, $f$ any
+nonnegative function, with expected value $E_{P}(f)=\sum_{x}P(x)f(x)$.
+For all $\lg\ge 0$ we have
+ \begin{equation} \label{eq:Markov}
+ \sum\setof{ P(x): f(x) > \lg E_{P}(f)} \le \lg.
+ \end{equation}
+
+For any string $x\in \dS$, and natural number $i$, let $N(i \mvert x)$
+denote the number of occurrences of $i$ in $x$.
+For a binary string $x$
+of length $n$ define $p_{x} = N(1 \mvert x)/n$, and
+ \begin{align*}
+   P_{x}(y)	&= p_{x}^{N(1 \mvert y)}(1-p_{x})^{N(0 \mvert y)}
+ \\ d(x)	&= \log P_{x}(x) + n - \log(n+1).
+ \end{align*}
+  We show that $d(x)$ is a ML-test.
+It is obviously computable.
+We prove~\eqref{eq:llntestcd}.
+We have
+ \begin{align*}
+  \sum_{x} P(x) 2^{d(x)} &= \sum_{x} 2^{-n} 2^{n} P_{x}(x)\frac{1}{n+1}
+	= \frac{1}{n+1}\sum_{x} P_{x}(x)
+  \\ &= \frac{1}{n+1}\sum_{k=0}^{n}\binom{n}{k}(\frac{k}{n})^k
+   (1-\frac{k}{n})^{n-k} < \frac{1}{n+1}\sum_{k=0}^{n} 1 = 1.
+ \end{align*}
+The test $d(x)$ expresses the (weak) law of large numbers in a rather
+strong version. We rewrite $d(x)$ as
+ \[
+ d(x) = n(1 - h(p_{x})) - \log(n+1)
+ \]
+ where $h(p) = -p\log p - (1-p)\log(1-p)$.
+The entropy function
+$h(p)$ achieves its maximum 1 at $p=1/2$.
+Therefore the test $d(x)$
+tells us that the probability of sequences $x$ with $p_{x} < p < 1/2$
+for some constant $p$ is bounded by the exponentially decreasing
+quantitiy $(n+1)2^{-n(1-h(p))}$.
+We also see that since for some
+constant $c$ we have
+ \[
+   1-h(p) > c(p-1/2)^2,
+ \]
+therefore if the difference $| p_{x} - 1/2 |$ is much larger than
+ \[
+   \sqrt\frac{\log n}{cn}
+ \]
+  then the sequence $x$ is ``not random'', and hence, by
+Theorem~\ref{thm:MLcompl} its complexity is significantly smaller than $n$.
+ \end{example}
+
+\begin{formalization}
+Not formalized. Markov's inequality~\eqref{eq:Markov} is proved where it is used: in
+Proposition~\ref{propo:ml-integrable}, Corollary~\ref{cor:g2.2.8} and
+Theorem~\ref{thm:g2.3.2}.
+\end{formalization}
+
+\section{Computable distributions}
+ \label{sec:discrand}
+
+Let us generalize the notion of randomness to arbitrary discrete computable
+probability distributions.
+
+\subsection{Two kinds of test}
+
+Let $P(x)$ be a probability distribution over some discrete countable
+space $\Og$, which we will identify for simplicity with the set $\dS$ of
+finite strings of natural numbers.
+Thus, $P$ is a nonnegative function with
+ \[
+ \sum_{x} P(x) = 1.
+ \]
+  Later we will consider probability distributions $P$ over the space
+$\dN^{\dN}$, and they will also be characterized by a nonnegative function
+$P(x)$ over $\dS$.
+However, the above condition will be replaced by a different one.
+
+We assume $P$ to be computable, with some G\"odel number $e$.
+We want to define a test $d(x)$ of randomness with respect to $P$.
+It will
+measure how justified is the assumption that $x$ is the outcome of an
+experiment with distribution $P$.
+
+\begin{ourdefinition}[Computable probability distribution]
+  \label{def:ch2-computable-measure}
+  \lean{Kolmogorov.Randomness.ComputableMeasure, Kolmogorov.Randomness.IsComputableENNReal}
+  \leanok
+  \uses{def:computable-function, def:semimeasure}
+A \df{computable probability distribution} on binary strings is a function \( P \) from
+strings to \( [0,\infty] \) with \( \sum_{x} P(x) = 1 \) for which there are computable
+rational functions \( \ell_{k}(x) \le P(x) \le u_{k}(x) \) with
+\( u_{k}(x) - \ell_{k}(x) \le 2^{-k} \).
+\end{ourdefinition}
+\begin{definedinlean}\proves{def:ch2-computable-measure}\leanok\end{definedinlean}
+
+\begin{formalization}
+This definition is ours. It fixes what Section~\ref{sec:discrand} assumes about \( P \):
+strings are binary, and the G\'odel number \( e \) is replaced by the two approximating
+sequences. Chapter~1's \texttt{Kolmogorov.IsComputableENNReal} asks for one dyadic
+approximation within \( 2^{-k} \). The two-sided version makes both \( P \) and \( 1/P \)
+lower semicomputable directly, and the universal test \( 2^{-K(x)}/P(x) \) needs the second.
+\end{formalization}
+
+% Gacs source line 2533
+ \begin{definition}
+  \label{def:g2.2.1}
+  \lean{Kolmogorov.Randomness.IsIntegrableTest, Kolmogorov.Randomness.IsUniversalIntegrableTest}
+  \leanok
+  \uses{def:ch2-computable-measure, def:semicomputability}
+A function $d:\dS\to\dR$ is an \df{integrable test}, or
+\df{expectation-bounded test} of randomness
+with respect to $P$ if it is lower semicomputable and satisfies the condition
+ \begin{equation} 	\label{eq:newtestcond}
+\sum_{x} P(x)2^{d(x)} \le 1.
+ \end{equation}
+It is \df{universal} if it dominates all other integrable tests to within an
+additive constant.
+ \end{definition}
+
+\begin{formalization}
+Multiplicatively, \texttt{IsIntegrableTest P t} says that \( t = 2^{d} \) is lower
+semicomputable and \( \sum_{x} P(x) t(x) \le 1 \). Universality is \( t \le 2^{c} t_{0} \).
+\end{formalization}
+
+(A similar terminology is used in~\cite{LiViBook97} in order to distinguish
+tests satisfying condition~\eqref{eq:newtestcond} from Martin-L\"of tests.)
+
+% Gacs source line 2547
+\begin{remark}
+  We must allow $d(x)$ to take negative values, even if only, say values
+$\ge -1$, since otherwise condition~\eqref{eq:newtestcond} could only be satisfied
+with $d(x)=0$ for all $x$ with $P(x)>0$.
+\end{remark}
+
+% Gacs source line 2553
+ \begin{proposition}\label{propo:ml-integrable}
+  \lean{Kolmogorov.Randomness.IsMLTest, Kolmogorov.Randomness.IsIntegrableTest.isMLTest, Kolmogorov.Randomness.IsMLTest.mlCorrected_isIntegrableTest, Kolmogorov.Randomness.le_mul_mlCorrected}
+  \leanok
+  \uses{def:g2.2.1}
+Let $c = \log(2\pi^{2}/6)$.
+If a function $d(x)$ satisfies~\eqref{eq:newtestcond} then it
+satisfies~\eqref{eq:testcond}.
+If $d(x)$ satisfies~\eqref{eq:testcond} then $d - 2\log d - c$
+satisfies~\eqref{eq:newtestcond}.
+ \end{proposition}
+ \begin{proof}
+  \proves{propo:ml-integrable}
+  \leanok
+The first statement follows by Markov's Inequality~\eqref{eq:Markov}.
+The second one can be checked by immediate computation.
+ \end{proof}
+
+\begin{formalization}
+\texttt{IsMLTest P t} is condition~\eqref{eq:testcond} for an arbitrary \( P \):
+\( P\setof{x : t(x) > 2^{k}} \le 2^{-k} \) for all \( k \in \dN \). The first statement is
+Markov's inequality. For the second, the correction uses the weights
+\( w_{k} = 2^{k}/((k+1)(k+2)) \), for which \( \sum_{k} w_{k} 2^{-k} \) telescopes to exactly
+\( 1 \). The corrected test \( t'(x) = \sup\setof{w_{k} : 2^{k} < t(x)} \) is integrable with
+no free constant, and \( t \le 2(k+1)(k+2)\, t' \) on the level \( 2^{k} < t \le 2^{k+1} \).
+Additively, \( d' \ge d - 2\log(d+2) - 1 \) instead of \( d - 2\log d - c \) with
+\( c = \log(2\pi^{2}/6) \).
+\end{formalization}
+
+Thus, condition~\ref{eq:newtestcond} is nearly equivalent
+to condition~\eqref{eq:testcond}: to each test $d$ according to one of them,
+there is a test $d'$ asymptotically equal to $d$ satisfying the other.
+But condition~\eqref{eq:newtestcond} has the advantage
+of being just one inequality instead of the infinitely many ones.
+
+\subsection{Randomness via complexity}
+
+We want to find a universal integrable test.
+Let us introduce the function $w(x) = P(x)2^{d(x)}$.
+The above conditions on $d(x)$
+imply that $w(x)$ is semicomputable from below
+and satisfies $\sum_{x} w(x) \le 1$: so, it is a constructive semimeasure.
+With the universal constructive semimeasure of Theorem~\ref{thm:univsem},
+we also obtain a universal test for any computable probability distribution $P$.
+
+% Gacs source line 2581
+\begin{definition}
+  \label{def:g2.2.4}
+  \lean{Kolmogorov.Randomness.canonicalIntegrableTest}
+  \leanok
+  \uses{def:m, def:K, def:ch2-computable-measure}
+For an arbitrary measure $P$ over a discrete space $\Og$, let us denote
+ \begin{equation}\label{eq:d_c}
+  \ol\d_{P}(x) = \log\frac{\m(x)}{P(x)} = -\log P(x) - K(x).
+ \end{equation}
+\end{definition}
+
+\begin{formalization}
+The test is carried as \( 2^{\ol\d_{P}(x)} = 2^{-K(x)}/P(x) \) (\texttt{canonicalIntegrableTest U P}),
+with \( 2^{-K(x)} \) in place of \( \m(x) \). By the coding theorem
+(Theorem~\ref{thm:coding}) the two differ by a bounded factor. It is defined for computable
+\( P \) only, and its value is \( \infty \) where \( P(x) = 0 \).
+\end{formalization}
+
+The constants \( K(d) \) and \( K(P) \) in the next theorem need a formal reading. The
+following definition and theorem are ours and supply it.
+
+\begin{ourdefinition}[Description of a lower semicomputable function]
+  \label{def:ch2-description}
+  \lean{Kolmogorov.Randomness.IsLSCDescription, Kolmogorov.Randomness.descVal, Kolmogorov.Randomness.exists_lscDescription}
+  \leanok
+  \uses{def:semicomputability}
+A string \( y \) \df{describes} a lower semicomputable function \( f \) from strings to
+\( [0,\infty] \) if the approximation with index \( y \), in a fixed effective enumeration of
+all lower semicomputable approximations, converges to \( f \). Every lower semicomputable
+function has a description. For a test \( d \), a distribution \( P \), a transition \( T \)
+and a computable map \( f \), the quantities \( K(d) \), \( K(P) \), \( K(T) \), \( K(f) \) are
+read as \( K(y) \) for a description \( y \) of \( 2^{d} \), of \( P \), of
+\( (x,y) \mapsto T(x,y) \) on encoded pairs, and of the graph indicator
+\( (x,y) \mapsto 1[y = f(x)] \), respectively.
+\end{ourdefinition}
+\begin{definedinlean}\proves{def:ch2-description}\leanok\end{definedinlean}
+
+\begin{formalization}
+The enumeration is the repository's \texttt{approxEnum}, made monotone (\texttt{enumApprox}),
+with \( y \) read as the number \texttt{bitsToNat y}. Every statement with an explicit
+constant is quantified over all descriptions, so it holds for a shortest one, which is how
+\( K(d) \) is meant. G\'acs reads \( K(d) \) as the length of a shortest program for \( d \);
+the two readings should agree up to an additive constant, but that comparison is not
+formalized.
+\end{formalization}
+
+\begin{ourtheorem}[Exact domination]
+  \label{thm:ch2-exact-domination}
+  \lean{Kolmogorov.Randomness.indexed_domination, Kolmogorov.Randomness.indexed_domination_trim, Kolmogorov.Randomness.semimeasure_le_exact, Kolmogorov.Randomness.exists_pairCode_weight, Kolmogorov.Randomness.contIndexed_domination}
+  \leanok
+  \uses{def:ch2-description, def:semimeasure, def:K}
+Let \( G(x,z) \) be lower semicomputable in both arguments. There is a constant \( c \) such
+that for every \( z \) for which \( G(\cdot,z) \) is a semimeasure, and for all \( x \),
+ \[
+   2^{-K(z)} G(x,z) \le 2^{c} \cdot 2^{-K(x)}.
+ \]
+In particular \( 2^{-K(y)} \nu(x) \le 2^{c} \cdot 2^{-K(x)} \) for every constructive
+semimeasure \( \nu \) and every description \( y \) of \( \nu \), with \( c \) independent of
+\( \nu \). Moreover \( 2^{-K(y)} 2^{-K(y')} \le 2^{c} \cdot 2^{-K(\ang{y,y'})} \) for all
+\( y, y' \).
+\end{ourtheorem}
+
+\begin{proof}
+  \proves{thm:ch2-exact-domination}
+  \leanok
+  \uses{thm:univsem, thm:coding, l:kraft}
+Trim each \( G(\cdot,z) \), uniformly in \( z \), into a semimeasure that equals
+\( G(\cdot,z) \) whenever that is already one, as in the proof of
+Theorem~\ref{thm:univsem}. The mixture \( \sum_{z} 2^{-K(z)} G(x,z) \) is then a constructive
+semimeasure by Kraft's inequality, and the coding theorem bounds it by
+\( 2^{c} \cdot 2^{-K(x)} \).
+\end{proof}
+
+\begin{formalization}
+The second statement is G\'acs' exact domination~\eqref{eq:exact-domin}
+(Theorem~\ref{thm:exact-domin}), with \( 2^{-K(y)} \) in place of \( \m(\nu) \) and
+\( 2^{-K(x)} \) in place of \( \m(x) \). The third is \( K(\ang{y,y'}) \lea K(y) + K(y') \).
+Together they give every domination argument of this chapter the constant
+\( K(d) + K(P) \): index the semimeasure by \( z = \ang{y_{d}, y_{P}} \). The continuous
+analogue, against the universal semimeasure \( M \) of Theorem~\ref{thm:g2.3.5}, is
+\texttt{contIndexed\_domination}.
+\end{formalization}
+
+The following theorem shows that randomness can be tested by checking how close
+is the complexity $K(x)$ to its upper bound $-\log P(x)$.
+
+% Gacs source line 2591
+\begin{theorem}\label{thm:univ-integrable-test}
+  \lean{Kolmogorov.Randomness.canonicalIntegrableTest_isUniversal, Kolmogorov.Randomness.canonicalIntegrableTest_isIntegrableTest, Kolmogorov.Randomness.integrableTest_le_canonical, Kolmogorov.Randomness.universalSemimeasure_div_isUniversal, Kolmogorov.Randomness.integrableTest_le_canonical_exact, Kolmogorov.Randomness.integrableTest_le_canonical_exact'}
+  \leanok
+  \uses{def:g2.2.1, def:g2.2.4, def:ch2-description}
+The function $\ol\d_{P}(x)=-\log P(x)-K(x)$
+is a universal integrable test for any fixed computable probability
+distribution $P$.
+More exactly, it is lower
+semicomputable, satisfies~\eqref{eq:newtestcond} and
+for all integrable tests $d(x)$ for $P$, we have
+ \begin{equation*}d(x) \lea \ol\d_{P}(x) + K(d) + K(P).
+ \end{equation*}
+ \end{theorem}
+ \begin{proof}
+  \proves{thm:univ-integrable-test}
+  \leanok
+  \uses{thm:ch2-exact-domination, thm:coding, l:kraft}
+Let $d(x)$ be an integrable test for $P$.
+Then $\nu(x) = 2^{d(x)}P(x)$ is a constructive semimeasure, and it
+has a self-delimiting program of length $\lea K(d) + K(P)$.
+It follows (using the definition~\eqref{eq:m(nu)})
+that $m(\nu) \lem 2^{K(d) + K(P)}$; hence inequality~\eqref{eq:exact-domin}
+gives
+ \[
+   \nu(x) 2^{K(d) + K(P)} \lem \m(x).
+ \]
+Taking logarithms finishes the proof.
+ \end{proof}
+
+\begin{formalization}
+Formalized in two forms.
+\begin{itemize}
+\item With a constant that depends on \( d \) and \( P \): \( t \le 2^{c} \cdot 2^{-K(x)}/P(x) \)
+  for every integrable test \( t = 2^{d} \) (\texttt{integrableTest\_le\_canonical}). Here
+  \( P t \) is a constructive semimeasure and the coding theorem applies.
+  \texttt{universalSemimeasure\_div\_isUniversal} states the theorem with \( \m(x)/P(x) \), for
+  any universal semimeasure \( \m \).
+\item With his constant: \( 2^{-K(y_{d})} 2^{-K(y_{P})} t(x) \le 2^{c} \cdot 2^{-K(x)}/P(x) \)
+  for descriptions \( y_{d} \) of \( t \) and \( y_{P} \) of \( P \), where \( c \) depends on
+  neither \( P \), \( t \) nor \( x \) (\texttt{integrableTest\_le\_canonical\_exact}; the
+  exponent form \( t(x) \le 2^{c + K(y_{d}) + K(y_{P})} \cdot 2^{-K(x)}/P(x) \) is
+  \texttt{integrableTest\_le\_canonical\_exact'}). Instead of~\eqref{eq:m(nu)}
+  and~\eqref{eq:exact-domin} the proof applies Theorem~\ref{thm:ch2-exact-domination} to the
+  product \( G(x, \ang{y,y'}) = f_{y}(x) f_{y'}(x) \) of the described functions.
+\end{itemize}
+The test is lower semicomputable because \( K \) is upper semicomputable and \( P \) is
+computable, so that \( 1/P \) is lower semicomputable. Its expectation is at most
+\( \sum_{x} 2^{-K(x)} \le 1 \) by Kraft's inequality.
+\end{formalization}
+
+The simple form of our universal test suggests remarkable interpretations.
+It says that the outcome $x$ is random with respect to the distribution
+$P$, if the latter assigns to $x$ a large enough
+probability---however, not in absolute terms, only relatively to the
+universal semimeasure $\m(x)$.
+The relativization is essential, since
+otherwise we could not distinguish between random and nonrandom
+outcomes for the uniform distribution $P_{n}$ defined in
+Section~\ref{sec:tests}.
+
+For any (not necessarily computable) distribution $P$, the
+$P$-expected value of the function $\m(x)/P(x)$ is at most 1,
+therefore the relation
+ \[
+ 	\m(x) \le k P(x)
+ \]
+  holds with probability not smaller than $1-1/k$.
+If $P$ is computable then the inequality
+ \[
+	\m(P) P(x) \lem \m(x)
+ \]
+  holds for all $x$.
+Therefore the following applications are obtained.
+
+\begin{itemize}
+
+ \item If we assume $x$ to be the outcome of an experiment with some
+simple computable probability distribution $P$ then $\m(x)$ is a good
+estimate of $P(x)$.
+The goodness depends on how simple $P$ is to
+define and how random $x$ is with respect to $P$: how justified
+is the assumption.
+Of course, we cannot compute $\m(x)$ but it is
+nevertheless well defined.
+
+ \item If we trust that a given object $x$ is random with respect to a
+given distribution $P$ then we can use $P(x)$ as an estimate of $\m(x)$.
+The degree of approximation depends on the same two factors.
+
+ \end{itemize}
+
+Let us illustrate the behavior of the universal semimeasure $\m(x)$
+when $x$ runs over the set of natural numbers.
+We define the
+semimeasures $v$ and $w$ as follows.
+Let $v(n)=c/n^2$ for an
+appropriate constant $c$, let $w(n)=v(x)$ if $n=2^{2^k}$, and 0
+otherwise.
+Then $\m(n)$ dominates both $v(n)$ and $w(n)$.
+The function $\m(n)$ dominates $1/n\log^2n$, but jumps at many places
+higher than that.
+Indeed, it is easy to see that $\m(n)$ converges to
+0 slower than any positive computable function converging to 0: in
+particular, it is not computable.
+Hence it cannot be a measure, that is $\sum_{x} \m(x) < 1$.
+We feel that we can make $\m(x)$ ``large'' whenever $x$ is ``simple''.
+
+We cannot compare the universal test defined in the present section
+directly with the one defined in Section~\ref{sec:tests}.
+There, we investigated tests for a whole family $P_{n}$ of
+distributions, where $P_{n}$ is the uniform distribution on the set
+$\dB^{n}$.
+That the domain of these distributions is a different one for
+each $n$ is not essential since we can identify the set $\dB^{n}$ with
+the set $\{2^{n},\ldots,2^{n+1}-1\}$.
+Let us rewrite the function $d_{0}(x)$ defined in~\eqref{eq:d0} as
+ \[
+ 	d_{0}(x) = n - C(x \mvert n)
+ \]
+ for $x \in \dB^{n}$, and set it $\infty$ for $x$ outside $\dB^{n}$. Now the
+similarity to the expression
+ \[
+  	\ol\d_{P}(x) = -\log P(x) - \log \m(x)
+ \]
+  is striking because $n = \log P_{n}(x)$.
+Together with the remark
+made in the previous paragraph, this observation suggests that the
+value of $-\log \m(x)$ is close to the complexity $C(x)$.
+
+\subsection{Conservation of randomness}
+
+The idea of conservation of randomness has been expressed first by Levin,
+who has published some papers culminating in~\cite{LevinRandCons84}
+developing a general theory.
+In this section, we address the issue in its simplest form only.
+Suppose that we want to talk about the randomness of integers.
+One and the same integer $x$
+can be represented in decimal, binary, or in some
+other notation: this way, every time a different string will represent the
+same number.
+Still, the form of the representation should not affect the question of
+randomness of $x$ significantly.
+How to express this formally?
+
+Let $P$ be a computable measure and let $f : \dS \to \dS$ be a computable
+function.
+We expect that under certain conditions, the randomness of $x$ should imply
+the randomness of $f(x)$---but, for which distribution?
+For example, if $x$ is a binary string and $f(x)$ is the decimal notation
+for the number expressed by $1x$ then we expect $f(x)$ to be random not
+with respect to $P$, but with respect to the measure $f^{*}P$ that is
+the image of $P$ under $f$.
+This measure is defined by the formula
+ \begin{equation}\label{eq:measure-image}
+   (f^{*}P)(y) = P(f^{-1}(y)) = \sum_{f(x) = y} P(x).
+ \end{equation}
+
+% Gacs source line 2722
+ \begin{proposition}
+  \label{prop:g2.2.5}
+  \lean{Kolmogorov.Randomness.pushforward, Kolmogorov.Randomness.pushMass, Kolmogorov.Randomness.pushMass_isLSC₁, Kolmogorov.Randomness.IsLSC₁.isComputable_of_tsum_eq_one}
+  \leanok
+  \uses{def:ch2-computable-measure}
+If $f$ is a computable function and $P$ is a computable measure
+then $f^{*}P$ is a computable measure.
+ \end{proposition}
+ \begin{proof}
+  \proves{prop:g2.2.5}
+  \leanok
+  \uses{prop:constructive-measure}
+It is sufficient to show that $f^{*}P$ is lower semicomputable, since we
+have seen that a lower semicomputable measure is computable.
+But, the semicomputability can be seen immediately from the definition.
+ \end{proof}
+
+\begin{formalization}
+\texttt{pushforward f hf P} is \( f^{*}P \) as a computable distribution. ``A lower
+semicomputable measure is computable'' is Proposition~\ref{prop:constructive-measure},
+re-proved here for the two-sided computability of
+Definition~\ref{def:ch2-computable-measure}.
+\end{formalization}
+
+Let us see that randomness is indeed preserved for the image.
+Similarly to~\eqref{eq:m(nu)}, let us define for an arbitrary computable
+function $f$:
+ \begin{equation}\label{eq:m(f)}
+   \m(f) = \sum\setof{\m(p) : \txt{program $p$ computes $f$}}.
+ \end{equation}
+
+% Gacs source line 2739
+ \begin{theorem}\label{thm:simple-rand-cons-det}
+  \lean{Kolmogorov.Randomness.canonical_pushforward_le, Kolmogorov.Randomness.canonical_pushforward_comp_isIntegrableTest, Kolmogorov.Randomness.det_canonical_image_le, Kolmogorov.Randomness.det_canonical_image_le_exact}
+  \leanok
+  \uses{prop:g2.2.5, def:g2.2.4, def:ch2-description}
+ Let $f$ be a computable function.
+Between the randomness test for $P$ and
+the test for the image of $P$, the following relation holds, for
+all $x$:
+  \begin{equation}\label{eq:simple-rand-cons-det}
+  \ol\d_{f^{*} P }(f(x)) \lea \ol\d_{P}(x) + K(f) + K(P).
+  \end{equation}
+ \end{theorem}
+ \begin{proof}
+  \proves{thm:simple-rand-cons-det}
+  \leanok
+  \uses{thm:univ-integrable-test, thm:ch2-exact-domination, l:kraft}
+Let us denote the function on the left-hand side
+of~\eqref{eq:simple-rand-cons-det} by
+ \[
+   d_{P}(x) = \ol\d_{f^{*}P}(f(x)) = \log\frac{\m(f(x))}{(f^{*}P)(f(x))}.
+ \]
+It is lower semicomputable, with the help of a program of length
+$K(f) + K(P)$, by its very definition.
+Let us check that it is an integrable test, so it
+satisfies the inequality~\eqref{eq:newtestcond}.
+We have
+ \[
+ \sum_{x} P(x) 2^{d_{P}(x)}
+     = \sum_{y} (f^{*}P)(y) 2^{\ol\d_{f^{*}P}(y)} =
+       \sum_{y} \m(y) \le 1.
+ \]
+Hence $d_{P}(x)$ is a test, and hence it is
+$\lea \ol\d_{P}(x) + K(f) + K(P)$, by the universality of the test $\ol\d_{P}(x)$.
+(Strictly speaking, we must modify the proof of
+Theorem~\ref{thm:univ-integrable-test} and see that a program of length $K(f) +
+K(P)$ is also sufficient to define the semimeasure $P(x) d(x \mvert P)$.)
+ \end{proof}
+
+\begin{formalization}
+Multiplicatively, \( 2^{\ol\d_{f^{*}P}(f(x))} \le 2^{c} \cdot 2^{\ol\d_{P}(x)} \), with a
+constant that depends on \( f \) and \( P \) (\texttt{canonical\_pushforward\_le}). As in his
+proof, \( x \mapsto 2^{\ol\d_{f^{*}P}(f(x))} \) is shown to be an integrable test for \( P \)
+(\texttt{canonical\_pushforward\_comp\_isIntegrableTest}); \( 2^{-K(f(x))} \) and
+\( 2^{-K(x)} \) are never compared pointwise. With his constant \( K(f) + K(P) \) the theorem
+is \texttt{det\_canonical\_image\_le\_exact}. There \( f \) is described through its graph
+indicator, and \( f^{*}P \) is obtained as the image under the deterministic transition
+\( T(x,y) = 1[y = f(x)] \) of Theorem~\ref{thm:g2.2.3}, which has the same values. The weight
+\( \m(f) \) of~\eqref{eq:m(f)} is not formalized.
+\end{formalization}
+
+The appearance of the term $K(f)$ on the right-hand side is understandable:
+using some very complex function $f$, we can certainly turn any string
+into any other one, also a random string into a much less random one.
+On the other hand, the term $K(P)$ appears only due to the
+imperfection of our concepts.
+It will disappear in the more advanced theory presented in later sections,
+where we develop \emph{uniform tests}.
+
+% Gacs source line 2779
+\begin{example}
+For each string $x$ of length $n \ge 1$, let
+ \[
+  P(x) = \frac{2^{-n}}{n(n+1)}.
+ \]
+This distribution is uniform on strings of equal length.
+Let $f(x)$ be the function that erases the first $k$ bits.
+Then for $n \ge 1$ and for any string $x$ of length $n$
+we have
+ \[
+  (f^{*}P)(x) = \frac{2^{-n}}{(n+k)(n+k+1)}.
+ \]
+(The empty string has the rest of the weight of $f^{*}P$.)
+The  new distribution is still uniform on strings of equal length,
+though
+the total probability of strings of length $n$ has changed somewhat.
+We certainly expect randomnes conservation here:
+after erasing the first $k$ bits of
+a random string of length $n+k$, we should
+still get a random string of length $n$.
+\end{example}
+
+The computable
+function $f$ applied to a string $x$ can be viewed as some kind of
+transformation $x \mapsto f(x)$.
+As we have seen, it does not make $x$ less random.
+Suppose now that we introduce randomization into the transformation
+process itself: for example, the machine computing $f(x)$ can also toss
+some coins.
+We want to say that randomness is also conserved under such more general
+transformations, but first of all, how to express such a transformation
+mathematically?
+We will describe it by a ``matrix'':
+a computable probability transition function $T(x,y) \ge 0$ with the
+property that
+ \[
+   \sum_{y} T(x, y) = 1.
+ \]
+Now, the image of the distribution $P$ under this transformation can be
+written as $T^{*}P$, and defined as follows:
+ \[
+   (T^{*}P)(y) = \sum_{x} P(x) T(x, y).
+ \]
+How to express now randomness conservation?
+It is certainly not true that every possible outcome $y$ is as random
+with respect to $T^{*}P$ as $x$ is with respect to $P$.
+We can only expect that for each $x$, the conditional probability
+(in terms of the transition $T(x, y)$) of those $y$ whose non-randomness is
+larger than that of $x$, is small.
+This will indeed be expressed by the corollary below.
+To get there, we upperbound the $T(x, \cdot)$-expected value
+of $2^{\ol\d_{T^{*}P}(y)}$.
+Let us go over to exponential notation:
+
+% Gacs source line 2833
+ \begin{definition}
+  \label{def:g2.2.7}
+  \lean{Kolmogorov.Randomness.canonicalIntegrableTest}
+  \leanok
+  \uses{def:g2.2.4}
+Denote
+ \begin{align}\label{eq:e.ol-t}
+    \ol\t_{P}(x) = 2^{\ol\d_{P}(x)}=\frac{\m(x)}{P(x)}.
+  \end{align}
+ \end{definition}
+
+\begin{formalization}
+This exponential form is the one the formalization uses throughout, with \( 2^{-K(x)} \) in
+place of \( \m(x) \) (Definition~\ref{def:g2.2.4}).
+\end{formalization}
+
+% Gacs source line 2840
+ \begin{theorem}
+  \label{thm:g2.2.3}
+  \lean{Kolmogorov.Randomness.ComputableTransition, Kolmogorov.Randomness.ComputableTransition.image, Kolmogorov.Randomness.transTest, Kolmogorov.Randomness.transTest_isIntegrableTest, Kolmogorov.Randomness.transTest_le_canonical, Kolmogorov.Randomness.transTest_le_canonical_exact}
+  \leanok
+  \uses{def:g2.2.7, def:g2.2.1, def:ch2-description}
+ We have
+ \begin{equation}\label{eq:simple-rand-cons-rand}
+ \log \sum_{y} T(x, y) 2^{\ol\d_{T^{*} P}(y)} \lea \ol\d_{P}(x) + K(T) + K(P).
+ \end{equation}
+ \end{theorem}
+ \begin{proof}
+  \proves{thm:g2.2.3}
+  \leanok
+  \uses{thm:univ-integrable-test, thm:ch2-exact-domination, prop:constructive-measure, l:kraft}
+Let us denote the function on the left-hand side
+of~\eqref{eq:simple-rand-cons-rand} by $t_{P}(x)$.
+It is lower semicomputable by its very construction, using a program of
+length $\lea K(T) + K(P)$.
+Let us check that it satisfies $\sum_{x} P(x) t_{P}(x) \le 1$ which,
+in this notation, corresponds to inequality~\eqref{eq:newtestcond}.
+We have
+ \begin{align*}
+   \sum_{x} P(x) t_{P}(x) &= \sum_{x} P(x) \sum_{y} T(x, y) t_{T^{*} P}(y)
+\\   &= \sum_{x} P(x) \sum_{y} T(x, y) \frac{\m(y)}{(T^{*}P)(y)}
+      = \sum_{y} \m(y) \le 1.
+ \end{align*}
+It follows that $d_{P}(x) = \log\, t_{P}(x)$ is an integrable
+test and hence $d_{P}(x) \lea \ol\d_{P}(x) + K(T) + K(P)$.
+(See the remark at the end of the proof of
+Theorem~\ref{thm:simple-rand-cons-det}.)
+ \end{proof}
+
+\begin{formalization}
+Multiplicatively, \( \sum_{y} T(x,y)\, \ol\t_{T^{*}P}(y) \le 2^{c}\, \ol\t_{P}(x) \)
+(\texttt{transTest\_le\_canonical}), with \( 2^{-K} \) in place of \( \m \). The transition
+need only be lower semicomputable in \( (x,y) \), with rows summing to \( 1 \)
+(\texttt{ComputableTransition}). Together with the normalization this implies computability,
+by the argument of Proposition~\ref{prop:constructive-measure} run row by row (not
+formalized), so nothing is lost. The image \( T^{*}P \) is a computable distribution by
+Proposition~\ref{prop:constructive-measure}.
+
+With his constant \( K(T) + K(P) \) the theorem is \texttt{transTest\_le\_canonical\_exact}:
+\( 2^{-K(y_{T})} 2^{-K(y_{P})} \sum_{y} T(x,y)\, \ol\t_{T^{*}P}(y) \le 2^{c}\, \ol\t_{P}(x) \),
+where \( y_{T} \) describes \( T \) on encoded pairs and \( c \) depends on neither \( T \),
+\( P \) nor \( x \). His closing remark about a program of length \( K(T) + K(P) \) becomes one
+family, lower semicomputable in \( x \) and the index \( \ang{y_{T}, y_{P}} \), to which
+Theorem~\ref{thm:ch2-exact-domination} applies. In it, \( 1/(T^{*}P)(y) \) is only upper
+semicomputable; since \( T^{*}P \) has total mass \( 1 \) it is written as
+\( (1 - \sum_{y' \ne y} (T^{*}P)(y'))^{-1} \), which is lower semicomputable.
+\end{formalization}
+
+% Gacs source line 2864
+ \begin{corollary}
+  \label{cor:g2.2.8}
+  \lean{Kolmogorov.Randomness.transition_deficiency_tail, Kolmogorov.Randomness.transition_deficiency_tail_exact}
+  \leanok
+  \uses{thm:g2.2.3}
+There is a constant $c_{0}$
+such that for every integer $k \ge 0$, for all $x$ we have
+ \[
+ \sum\setof{ T(x, y) : \ol\d_{T^{*}P}(y) - \ol\d_{P}(x) > k + K(T) + K(P)}
+ \le 2^{-k + c_{0}}.
+ \]
+ \end{corollary}
+ \begin{proof}
+  \proves{cor:g2.2.8}
+  \leanok
+  \uses{thm:g2.2.3}
+The theorem says
+ \[
+  \sum_{y} T(x, y) \ol\t_{T^{*} P}(y) \lem t_{P}(x)2^{K(T) + K(P)}.
+ \]
+Thus, it upperbounds the expected value of
+the function  $2^{\ol\d_{T^{*}P)}(y)}$ according to the distribution $T(x, \cdot)$.
+Applying Markov's inequality~\eqref{eq:Markov}
+to this function yields the desired result.
+ \end{proof}
+
+\begin{formalization}
+Multiplicatively, the event is
+\( 2^{k}\, \ol\t_{P}(x) < 2^{-K(y_{T})} 2^{-K(y_{P})}\, \ol\t_{T^{*}P}(y) \), and its
+\( T(x,\cdot) \)-probability is at most \( 2^{c-k} \) with \( c \) independent of \( T \),
+\( P \), \( k \) and \( x \) (\texttt{transition\_deficiency\_tail\_exact}). Without the term
+\( K(T) + K(P) \), and with \( c \) depending on \( T \) and \( P \), it is
+\texttt{transition\_deficiency\_tail}.
+\end{formalization}
+
+\section{Infinite sequences}
+
+These lecture notes treat the theory of randomness over continuous spaces mostly
+separately, starting in Section~\ref{sec:cont-spaces}.
+But the case of computable measures over infinite sequences is particularly
+simple and appealing, so we give some of its results here, even if most
+follow from the more general results given later.
+
+In this section, we will fix a finite or countable \df{alphabet}
+\( \Sg=\set{s_{1},s_{2},\dots} \), and consider
+probability distributions over the set
+\begin{align*}
+   X = \Sg^{\dN}
+ \end{align*}
+of infinite sequences with members in \( \Sg \).
+An alternative way of speaking of this is to consider a sequence of
+\df{random variables} \( X_{1},X_{2},\dots \), where \( X_{i}\in\Sg \), with a joint
+distribution.
+The two interesting extreme special cases are \( \Sg=\dB=\{0,1\} \), giving the set
+of infinite 0-1 sequences, and \( \Sg=\dN \), giving the set sequences of natural
+numbers.
+
+\begin{formalization}
+The formalization takes \( \Sg = \dB \): a sequence is a function \( \dN \to \{0,1\} \)
+(\texttt{Seq}), a string is a list of bits. Everything is stated through strings: open sets
+by generating sets of strings, measures by their values on cylinders, lower semicomputable
+functions on \( X \) by their values on prefixes. His general measure theory,
+Definitions~\ref{def:g2.3.15}--\ref{def:g2.3.27} with their propositions, is not formalized
+(see the note at the start of Subsection 2.3.2).
+\end{formalization}
+
+\subsection{Null sets}
+
+Our goal is here to illustrate the measure theory developed in
+Section~A.2, through Subsection~A.2.3,
+on the concrete example of the set
+of infinite sequences, and then to develop the theory of randomness
+in it.
+
+We will distinguish a few simple kinds of subsets of the set \( \S \) of sequences,
+those for which probability can be defined especially easily.
+
+% Gacs source line 2917
+\begin{definition}\
+  \label{def:g2.3.1}
+  \lean{Kolmogorov.Randomness.Seq, Kolmogorov.Randomness.cylinder, Kolmogorov.Randomness.openOf}
+  \leanok
+  \begin{bullets}
+  \item
+  For string \( z\in\Sg^{*} \), we will denote by \( zX \) the set of elements of \( X \)
+with prefix \( z \).
+Such sets will be called \df{cylinder sets}.
+ \item
+A subset of \( X \) is \df{open} if it is the union of any number (not necessarily
+finite) of cylinder sets.
+It is called \df{closed} if its complement is open.
+ \item
+An open set is called \df{constructive} if it is the union of a recursively
+enumerable set of cylinder sets.
+\item A set is called \( G_{\dg} \) if it is the intersection of a sequence of open sets.
+ It is called \( F_{\sg} \) if it is the union of a sequence of closed sets.
+\item
+ We say that a set \( E\sbsq X \) is \df{finitely determined} if there is an \( n \)
+and an \( \cE\sbsq \Sg^{n} \) such that
+\begin{align*}
+  E = \cE X=\bigcup_{s\in\cE}s X.
+ \end{align*}
+Let \( \cF \) be the class of all finitely determined subsets of \( X \).
+  \item
+A class of subsets of \( X \) is called an \df{algebra} if it is closed with respect
+to finite intersections and complements (and then of course, also with respect
+to finite unions).
+It is called a \( \sg \)-algebra (sigma-algebra)
+when it is also closed with respect to countable
+intersections (and then of course, also with respect to countable unions).
+\end{bullets}
+\end{definition}
+
+\begin{formalization}
+Formalized for \( \Sg = \dB \): the cylinder \( zX \) is \texttt{cylinder z}, and the open set
+generated by a set \( \Gg \) of strings is \texttt{openOf \( \Gg \)}. A constructive open set is
+\texttt{openOf \( \Gg \)} with \( \Gg \) recursively enumerable, which is how
+Definition~\ref{def:g2.3.13} uses it. Mathlib's product topology on \( \dN \to \{0,1\} \) has
+these open sets; the formalization uses only that cylinders are open, closed and compact.
+\( G_{\dg} \) and \( F_{\sg} \) sets, finitely determined sets and algebras are not restated.
+\end{formalization}
+
+% Gacs source line 2949
+\begin{example}
+An example open set that is not finitely determined, is the set \( E \) of all sequences that
+contain a substring \( 11 \).
+\end{example}
+
+The following observations are easy to prove.
+
+% Gacs source line 2956
+\begin{proposition}\
+  \label{prop:g2.3.3}
+  \lean{Kolmogorov.Randomness.isOpen_cylinder, Kolmogorov.Randomness.isClosed_cylinder, Kolmogorov.Randomness.isOpen_openOf}
+  \uses{def:g2.3.1}
+  \begin{alphenum}
+ \item
+ Every open set \( G \) can be represented as the union of a sequence of \emph{disjoint}
+cylinder sets.
+ \item
+The set of open sets is closed with respect to finite intersection
+and arbitrarily large union.
+  \item
+ Each finitely determined set is both open and closed.
+ \item
+The class \( \cF \) of finitely determined sets forms an algebra.
+ \end{alphenum}
+\end{proposition}
+
+\begin{formalization}
+Partially formalized: cylinders are open and closed, and \texttt{openOf \( \Gg \)} is open.
+Clause~(b) holds in any topology. Clause~(a) is not needed, because the measure of an open
+set is defined without a disjoint representation (Definition~\ref{def:g2.3.8}).
+Clauses~(c) and~(d) are not formalized.
+\end{formalization}
+
+Probability is generally defined as a nonnegative, monotonic
+function (a ``measure'', see later) on some subsets of the event
+space (in our case the set \( X \)) that has a certain additivity property.
+We do not need immediately the complete definition of measures, but let us say
+what we mean by an additive set function.
+
+% Gacs source line 2977
+\begin{definition}
+  \label{def:g2.3.4}
+  \notready
+Consider a nonnegative, function \( \mu \) is defined over some subsets of \( X \).
+that is also \df{monotonic}, that is \( A\sbsq B \) implies  \( \mu(A)\sbsq\mu(B) \).
+We say that it is \df{additive} if,
+whenever it is defined on the sets
+\( E_{1},\dots,E_{n} \), and on \( E=\bigcup_{i=1}^{n}E_{i} \)
+and the sets \( E_{i} \) are mutually disjoint, then we have
+\( \mu(E)=\mu(E_{1})+\dots+\mu(E_{n}) \).
+
+We say that \( \mu \) is \df{countably additive}, or \( \sg \)-additive (sigma-additive),
+if in addition whenever it is defined on the sets
+\( E_{1},E_{2},\dots \), and on \( E=\bigcup_{i=1}^{\infty}E_{i} \)
+and the sets \( E_{i} \) are mutually disjoint, then we have
+\( \mu(E)=\sum_{i=1}^{\infty}\mu(E_{i}) \).
+\end{definition}
+
+\begin{formalization}
+Not formalized. This is the general notion of an additive set function, which Mathlib has
+(\texttt{MeasureTheory.AddContent}, \texttt{MeasureTheory.Measure}). The formalization uses
+additivity only on cylinders, in the form of Definition~\ref{def:g2.3.5}.
+\end{formalization}
+
+First we consider only measures defined on cylinder sets.
+
+% Gacs source line 2995
+\begin{definition}[Measure over \( \Sg^{\dN} \)]
+  \label{def:g2.3.5}
+  \lean{Kolmogorov.Randomness.IsSeqMeasure, Kolmogorov.Randomness.ComputableSeqMeasure, Kolmogorov.Randomness.uniformSeqMeasure}
+  \leanok
+  \uses{def:g2.3.1, def:ch2-computable-measure}
+Let \( \mu:\Sg^{*}\to\dR_{+} \) be a function assigning a nonnegative number to
+each string in \( \Sg^{*} \).
+We will call \( \mu \) a \df{measure} if it satisfies the condition
+ \begin{align}\label{eq:extension-sum}
+   \mu(x)=\sum_{s\in\Sg}\mu(xs).
+ \end{align}
+We will take the liberty to also write
+ \begin{align*}
+   \mu(s X)=\mu(s)
+ \end{align*}
+for all \( s\in\Sg^{*} \), and \( \mu(\emptyset)=0 \).
+We call \( \mu \) a \df{probability measure} if \( \mu(\Lg)=1 \) and correspondingly,
+\( \mu(X)=1 \).
+
+A measure is called \df{computable} if it is computable as a function
+\( \mu:\Sg^{*}\to\dR_{+} \) according to Definition~\ref{def:semicomputability}.
+\end{definition}
+
+\begin{formalization}
+Formalized for \( \Sg = \dB \): \texttt{IsSeqMeasure \( \mu \)} is
+\( \mu(x) = \mu(x0) + \mu(x1) \) for a function from strings to \( [0,\infty] \).
+\texttt{ComputableSeqMeasure} bundles this law with \( \mu(\Lg) = 1 \) and the two-sided
+computability of Definition~\ref{def:ch2-computable-measure}; every result about sequences
+assumes it. The uniform measure \( \lg(x) = 2^{-\len{x}} \) of
+Examples~\ref{example:null-set} is \texttt{uniformSeqMeasure}.
+\end{formalization}
+
+The following observation lets us extend measures.
+
+% Gacs source line 3016
+\begin{lemma}\label{lem:cyl-measure}
+  \lean{Kolmogorov.Randomness.openMeasure_mono_openOf, Kolmogorov.Randomness.exists_level_of_cylinder_subset}
+  \leanok
+  \uses{def:g2.3.5, def:g2.3.8}
+  Let \( \mu \) be a measure defined as above.
+If a cylinder set \( s X \) is the disjoint union \( xX=x_{1}X\cup x_{2}X\cup\dots \)
+of cylinder sets, then we have \( \mu(z)=\sum_{i}\mu(x_{i}) \).
+\end{lemma}
+\begin{proof}
+  \proves{lem:cyl-measure}
+  \leanok
+  \uses{def:g2.3.1}
+Let us call an arbitrary \( y\in\Sg^{*} \) \df{good} if
+ \begin{align*}
+   \mu(zy)=\sum_{i}\mu(zyX\cap x_{i}X)
+ \end{align*}
+holds.
+We have to show that the empty string \( \Lg \) is good.
+
+It is easy to see that \( y \) is good if \( zyX\sbsq x_{i}X \) for some \( i \).
+Also, if \( ys \) is good for all \( s\in\Sg \) then \( y \) is good.
+Now assume that \( \Lg \) is not good.
+Then there is also an \( s_{1}\in\Sg \) that is not good.
+But then there is also an \( s_{2}\in\Sg \) such that \( s_{1}s_{2} \) is not good.
+And so on, we obtain an infinite sequence \( s_{1}s_{2}\dotsm \) such that
+\( s_{1}\dotsm s_{n} \) is not good for any \( n \).
+But then the sequence \( z s_{1}s_{2}\dotsm \) is not contained in
+\( \bigcup_{i}x_{i}X \), contrary to the assumption .
+\end{proof}
+
+\begin{formalization}
+Formalized as monotonicity of the measure in the open set: if the open set generated by
+\( \Gg \) is contained in the one generated by \( \Gg' \), then \( \mu(\Gg) \le \mu(\Gg') \)
+for the measure of Definition~\ref{def:g2.3.8}. So the measure depends only on the open set,
+not on its generators, which is what the lemma is for. The compactness step of his proof
+(the infinite sequence \( s_{1}s_{2}\dotsm \)) is taken from Mathlib: \( \dN \to \{0,1\} \) is
+compact, so a cylinder covered by cylinders is covered by finitely many of them, at a common
+length (\texttt{exists\_level\_of\_cylinder\_subset}).
+\end{formalization}
+
+% Gacs source line 3040
+\begin{corollary}
+  \label{cor:g2.3.7}
+  \lean{Kolmogorov.Randomness.openMeasure_le_tsum, Kolmogorov.Randomness.sum_le_levelMass_of_prefixFree}
+  \uses{lem:cyl-measure, def:g2.3.8}
+  Two disjoint union representations of the same open set
+ \begin{align*}
+   \bigcup_{i}x_{i}X = \bigcup_{i}y_{i}X
+ \end{align*}
+imply \( \sum_{i}\mu(x_{i})=\sum_{i}\mu(y_{i}) \).
+\end{corollary}
+\begin{proof}
+  \proves{cor:g2.3.7}
+  \uses{lem:cyl-measure}
+  The set \( \bigcup_{i}x_{i}X \) can also be written as
+ \begin{align*}
+  \bigcup_{i}x_{i}X=\bigcup_{i,j} x_{i}X\cap y_{j}X.
+\end{align*}
+An element \( x_{i}X\cap y_{j}X \) is nonempty only if one of the strings
+\( x_{i},y_{j} \) is a continuation of the other.
+Calling this string \( z_{ij} \) we have \( x_{i}X\cap y_{j}X=z_{ij}X \).
+Now Lemma~\ref{lem:cyl-measure} is applicable to the union
+\( x_{i}X=\bigcup_{j}(x_{i}X\cap y_{j}X) \),
+giving
+ \begin{align*}
+        \mu(x_{i}) &=\sum_{j}\mu(x_{i}X\cap y_{j}X),
+\\   \sum_{i}\mu(x_{i}) &=\sum_{i,j}\mu(x_{i}X\cap y_{j}X).
+\end{align*}
+The right-hand side is also equal similarly to \( \sum_{j}\mu(y_{j}) \).
+\end{proof}
+
+\begin{formalization}
+Not stated as an equality in Lean; this is listed as open in the strategy file. Both
+inequalities are there. The measure of the open set generated by \( \Gg \) is at most
+\( \sum_{x \in \Gg} \mu(x) \) (\texttt{openMeasure\_le\_tsum}), and a finite prefix-free set
+has total measure at most the level measure of the open set it generates
+(\texttt{sum\_le\_levelMass\_of\_prefixFree}). For prefix-free \( \Gg \) they give
+\( \mu(\Gg) = \sum_{x \in \Gg} \mu(x) \), and Lemma~\ref{lem:cyl-measure} then gives the
+corollary.
+\end{formalization}
+
+The above corollary allows the following definition:
+
+% Gacs source line 3067
+\begin{definition}
+  \label{def:g2.3.8}
+  \lean{Kolmogorov.Randomness.openMeasure, Kolmogorov.Randomness.levelMass}
+  \leanok
+  \uses{def:g2.3.5, def:g2.3.1}
+For an open set \( G \) given as a disjoint union of cylinder sets \( x_{i}X \)
+let \( \mu(G)=\sum_{i}\mu(x_{i}) \).
+For a closed set \( F=X\xcpt G \) where \( G \) is open, let
+\( \mu(F)=\mu(X)-\mu(G) \).
+\end{definition}
+
+\begin{formalization}
+Defined directly, without a disjoint representation: \texttt{openMeasure \( \mu \) \( \Gg \)} is
+the supremum over \( n \) of the total measure of the strings of length \( n \) that have a
+prefix in \( \Gg \) (\texttt{levelMass}). For a disjoint representation this is
+\( \sum_{i} \mu(x_{i}) \) (Corollary~\ref{cor:g2.3.7}). The measure of a closed set is not
+formalized.
+\end{formalization}
+
+The following is easy to check.
+
+% Gacs source line 3076
+\begin{proposition}
+  \label{prop:g2.3.9}
+  \lean{Kolmogorov.Randomness.openMeasure_mono_openOf, Kolmogorov.Randomness.openMeasure_mono_set, Kolmogorov.Randomness.openMeasure_iUnion_le}
+  \uses{def:g2.3.8}
+The measure as defined on open sets is monotonic and
+countably additive.
+In particular, it is countably additive
+on the algebra of finitely determined sets.
+\end{proposition}
+
+\begin{formalization}
+Partially formalized: monotonicity (\texttt{openMeasure\_mono\_openOf}) and countable
+subadditivity \( \mu(\bigcup_{i} G_{i}) \le \sum_{i} \mu(G_{i}) \)
+(\texttt{openMeasure\_iUnion\_le}), which is all the chapter uses. Additivity over disjoint
+open sets and the clause on finitely determined sets are not formalized.
+\end{formalization}
+
+Before extending measures to a wider range of sets, consider an important
+special case.
+With infinite sequences, there are certain events that are not impossible, but
+still have probability 0.
+
+% Gacs source line 3088
+\begin{definition}
+  \label{def:g2.3.10}
+  \lean{Kolmogorov.Randomness.IsNullSet}
+  \leanok
+  \uses{def:g2.3.8}
+Given a measure \( \mu \), a set \( N\sbsq X \) is called a \df{null set} with respect
+to \( \mu \)
+if there is a sequence \( G_{1},G_{2},\dots \) of open sets with the property
+\( N\sbsq \bigcap_{m}G_{m} \), and \( \mu(G_{m})\le 2^{-m} \).
+We will say that the sequence \( G_{m} \) \df{witnesses} the fact that \( N \) is a null set.
+\end{definition}
+
+% Gacs source line 3096
+\begin{examples}\label{example:null-set}
+Let \( \Sg=\{0,1\} \), let us define the measure \( \lg \) by
+\( \lg(x)=2^{-n} \) for all \( n \) and for all \( x\in\Sg^{n} \).
+  \begin{enumerate}
+  \item\label{i:singleton}
+For every infinite sequence \( \xi\in X \), the one-element set \( \{\xi\} \) is a null set
+with respect to \( \lg \).
+Indeed, for each natural number \( n \), let
+\( H_{n}=\setof{\xi\in X: \xi(0)=\xi(0),\xi(1)=\xi(1),\dots,\xi(n)=\xi(n)} \).
+Then \( \lg(H_{n})=2^{-n-1} \), and \( \{s\}=\bigcap_{n}H_{n} \).
+\item\label{i:even-places}
+For a less trivial example,
+consider the set \( E \) of those elements \( t\in X \) that are 1 in each positive even
+position, that is
+ \begin{align*}
+   E=\setof{t\in X: t(2)=1,t(4)=1,t(6)=1\dots}.
+ \end{align*}
+Then \( E \) is a null set.
+Indeed, for each natural number \( n \), let
+\( G_{n}=\setof{t\in X: t(2)=1,t(4)=1,\dots,t(2n)=1} \).
+This helps expressing \( E \) as \( E=\bigcap_{n}G_{n} \), where \( \lg(G_{n})=2^{-n} \).
+  \end{enumerate}
+\end{examples}
+
+% Gacs source line 3120
+\begin{proposition}\label{propo:infin-null-sets}
+  \lean{Kolmogorov.Randomness.isNullSet_iUnion}
+  \leanok
+  \uses{def:g2.3.10}
+Let \( N_{1},N_{2},\dots \) be a sequence of null sets with respect to a measure
+\( \mu \).
+Their union \( N=\bigcup_{i}N_{i} \) is also a null set.
+\end{proposition}
+\begin{proof}
+  \proves{propo:infin-null-sets}
+  \leanok
+  \uses{prop:g2.3.9}
+  Let \( G_{i,1},G_{i,2},\dots \) be the infinite sequence witnessing the fact that
+\( N_{i} \) is a null set.
+Let \( H_{m}=\bigcup_{i=1}^{\infty} G_{i,m+i} \).
+Then the sequence \( H_{m} \) of open sets witnesses the fact that \( N \) is a null set.
+\end{proof}
+
+We would like to extend our measure to null sets \( N \) and say \( \mu(N)=0 \).
+The proposition we have just proved shows that such an extension would be
+countably additive on the null sets.
+But we do not need this extension for the moment, so we postpone it.
+Still, given a probability measure \( P \) over \( X \), it becomes meaningful to say
+that a certain property holds with probability 1.
+What this means is that the set of those sequences that do not have this
+property is a null set.
+
+Following the idea of Martin-L\"of, we would like to call a sequence
+nonrandom, if it is contained in some \emph{simple} null set; that is it has
+some easily definable property with probability 0.
+As we have seen  in part~\ref{i:singleton} of Example~\ref{example:null-set},
+it is important to insist on simplicity, otherwise (say
+with respect to the measure \( \lg \)) every sequence might be contained in a null set,
+namely the one-element set consisting of itself.
+But most of these sets are not defined simply at all.
+An example of a simply defined null set is given is
+part~\ref{i:even-places} of Example~\ref{example:null-set}.
+These reflections justify the following definition, in which ``simple'' is
+specified as ``constructive''.
+
+% Gacs source line 3154
+\begin{definition}
+  \label{def:g2.3.13}
+  \lean{Kolmogorov.Randomness.IsConstructiveNull}
+  \leanok
+  \uses{def:g2.3.10, def:g2.3.5}
+Let \( \mu \) be a computable measure.
+A set \( N\sbsq X \) is called a \df{constructive null set} if there is
+recursively enumerable set \( \Gg\sbsq\dN\times\Sg^{*} \)
+with the property that denoting \( \Gg_{m}=\setof{x: \tup{m,x}\in\Gg} \)
+and \( G_{m}=\bigcup_{x\in\Gg_{m}}xX \)
+we have \( N\sbsq\bigcap_{m}G_{m} \), and \( \mu(G_{m})\le 2^{-m} \).
+\end{definition}
+
+\begin{formalization}
+Recursive enumerability of \( \Gg \) is that of the relation \( x \in \Gg_{m} \) in the pair
+\( (m,x) \). The definition is stated for any \( \mu \); the theorems assume \( \mu \)
+computable.
+\end{formalization}
+
+In words, the difference between the definition of null sets and constructive
+null sets is that the sets \( G_{m}=\bigcup_{x\in\Gg_{m}}xX \) here
+are required to be constructive open, moreover, in such a way that from \( m \) one
+can compute the program generating \( G_{m} \).
+In even looser words, a set is a constructive null set if for any \( \eps>0 \) one
+can construct effectively
+a union of cylinder sets containing it, with total measure \( \le\eps \).
+
+Now we are in a position to define random infinite sequences.
+
+% Gacs source line 3173
+\begin{definition}[Random sequence]
+  \label{def:g2.3.14}
+  \lean{Kolmogorov.Randomness.IsRandomSeq}
+  \leanok
+  \uses{def:g2.3.13}
+An infinite sequence \( \xi \) is \df{random} with respect to a probability measure
+\( P \) if and only if \( \xi \) is not contained in any constructive null set with
+respect to \( P \).
+\end{definition}
+
+It is easy to see that the set of nonrandom sequences is a null set.
+Indeed, there is only a countable number or constructive null sets,
+so even their union is a null set.
+The following theorem strengthens this observation significantly.
+
+% Gacs source line 3184
+\begin{theorem}\label{thm:univ-seq-test}
+  \lean{Kolmogorov.Randomness.isConstructiveNull_universalNull, Kolmogorov.Randomness.subset_universalNull, Kolmogorov.Randomness.isRandomSeq_iff}
+  \leanok
+  \uses{def:g2.3.14, def:g2.3.5}
+Let us fix a \emph{computable} probability measure \( P \).
+The set of all nonrandom sequences is a constructive null set.
+\end{theorem}
+Thus, there is a \df{universal} constructive null set, containing all other
+constructive null sets.
+A sequence is random when it does not belong to this set.
+\begin{proof}[Proof of Theorem~\protect\ref{thm:univ-seq-test}]
+  \proves{thm:univ-seq-test}
+  \leanok
+  \uses{thm:g2.3.2, thm:univ-integrable-test-seq, thm:defic-charac-cpt-seqs}
+The proof uses the projection technique that has appeared several times in this
+book, for example in proving the existence of a universal lower semicomputable
+semimeasure.
+
+We know that it is possible to list all recursively enumerable subsets of the
+set \( \dN\times\Sg^{*} \) into a sequence, namely that there is a recursively
+enumerable set \( \Dg\sbsq\dN^{2}\times\Sg^{*} \)
+with the property that for every recursively enumerable
+set \( \Gg\sbsq\dN\times\Sg^{*} \) there is an \( e \) with
+\( \Gg=\setof{\tup{m,x}: \tup{e,m,x}\in\Dg} \).
+We will write
+ \begin{align*}
+  \Dg_{e,m}&=\setof{x:\tup{e,m,x}\in\Dg},
+\\ D_{e,m}&=\bigcup_{x\in\Dg_{e,m}}xX.
+\end{align*}
+ We transform the set \( \Dg \) into another set \( \Dg' \)
+with the following property.
+\begin{bullets}
+\item For each \( e,m \) we have \( \sum_{\tup{e,m,x}\in\Dg'}\mu(x) \le 2^{-m+1} \).
+\item If  for some \( e \) we have
+\( \sum_{\tup{e,m,x}\in\Dg}\mu(x)\le 2^{-m} \) for all \( m \) then for all \( m \) we have
+\( \setof{x: \tup{e,m,x}\in\Dg'}=\setof{x: \tup{e,m,x}\in\Dg} \).
+\end{bullets}
+This transformation is routine, so we leave it to the reader.
+By the construction of \( \Dg' \), for every constructive null set \( N \) there is an \( e \)
+with
+ \begin{align*}
+   N\sbsq\bigcap_{m}D'_{e,m}.
+ \end{align*}
+Define the recursively enumerable set
+ \begin{align*}
+   \hat\Gg=\setof{\tup{m,x}: \exist{e} \tup{e,m+e+2,x}\in\Dg'}.
+ \end{align*}
+Then \( \hat G_{m}=\bigcup_{e}D'_{e,m+e+2} \).
+For all \( m \) we have
+ \begin{align*}
+\sum_{x\in\hat\Gg_{m}}\mu(x)&=\sum_{e}\sum_{\tup{e,m+e+2,x}\in\Dg'}\mu(x)
+ \le \sum_{e}2^{-m-e-1} = 2^{-m}.
+ \end{align*}
+This shows that \( \hat\Gg \) defines a constructive null set.
+Let \( \Gg \) be any other recursively enumerable subset of \( \dN\times\Sg^{*} \) that
+defines a constructive null set.
+Then there is an \( e \) such that for all \( m \) we have \( G_{m}=D'_{e,m} \).
+The universality follows now from
+ \begin{align*}
+\bigcap_{m}G_{m}=\bigcap_{m}D'_{e,m}\sbsq \bigcap_{m}D'_{e,m+e+2} \sbsq\bigcap_{m}\hat G_{m}.
+ \end{align*}
+\end{proof}
+
+\begin{formalization}
+The Lean proof does not use the projection technique, so it needs no transformation of
+\( \Dg \) into \( \Dg' \). It names the universal constructive null set:
+\( \setof{\xi : R(\xi) = \infty} \), where
+\( R(\xi) = \sup_{n} 2^{-K(\xi_{1:n})}/P(\xi_{1:n}) \) is the multiplicative form of the
+right-hand side of~\eqref{eq:defic-charac-seq}. This set is a constructive null set by
+Theorem~\ref{thm:g2.3.2}(a), applied to the universal test of
+Theorem~\ref{thm:univ-integrable-test-seq}. A constructive null set \( N \) lies in
+\( \setof{\xi : d(\xi) = \infty} \) for an integrable test \( d \)
+(Theorem~\ref{thm:g2.3.2}(b)), and \( 2^{d} \le 2^{c} R \) by the second half of the proof of
+Theorem~\ref{thm:defic-charac-cpt-seqs}, so \( N \sbsq \setof{R = \infty} \). Hence \( \xi \)
+is random if and only if \( R(\xi) < \infty \) (\texttt{isRandomSeq\_iff}).
+\end{formalization}
+
+\subsection{Probability space}
+
+\begin{formalization}
+Not formalized: Definitions~\ref{def:g2.3.15}--\ref{def:g2.3.27} and
+Propositions~\ref{prop:g2.3.19}, \ref{prop:g2.3.21}, \ref{prop:g2.3.24},
+\ref{propo:Riesz-extension-seqs} and~\ref{prop:g2.3.28}. This is textbook measure and
+integration theory, which Mathlib provides in general form (\texttt{MeasurableSpace},
+\texttt{borel}, \texttt{MeasureTheory.Measure}, Lebesgue measure on \( \dR \),
+\texttt{Measurable}, \texttt{MeasureTheory.lintegral}), and no result of the chapter needs
+it: every statement about sequences is proved through cylinders. In place of integrals,
+Definition~\ref{def:g2.3.29} uses level sums over strings of a fixed length. A bridge from
+the string-level measures of Definition~\ref{def:g2.3.5} to Mathlib measures on
+\( \dN \to \{0,1\} \) is an optional extension.
+\end{formalization}
+
+Now we are ready to extend measure to a much wider range of subsets of \( X \).
+
+% Gacs source line 3245
+\begin{definition}
+  \label{def:g2.3.15}
+  \notready
+ Elements of the smallest \( \sg \)-algebra \( \cA \) containing the cylinder sets of \( X \) are
+called the \df{Borel} sets of \( X \).
+The pair \( (X,\cA) \) is an example of a \df{measureable space}, where the Borel
+sets are called the \df{measureable sets}.
+
+A nonnegative sigma-additive function \( \mu \) over \( \cA \) is called a \df{measure}.
+It is called a \df{probability measure} if \( \mu(X)=1 \).
+If \( \mu \) is fixed then the triple \( (X,\cA,\mu) \) is called a \df{measure space}.
+If it is a probability measure then the space is called a \df{probability space}.
+\end{definition}
+
+In the Appendix we cited a central theorem of measure theory,
+Caratheodory's extension theorem.
+It implies that if a measure is defined on an algebra \( \cL \) in a sigma-additive way
+then it can be extended uniquely
+to the \( \sg \)-algebra generated by \( \cL \), that is the
+smallest \( \sg \)-algebra containing \( \cL \).
+We defined a measure \( \mu \) over \( X \) as a nonnegative function
+\( \mu:\Sg^{*}\to\dR_{+} \)
+satisfying the equality~\eqref{eq:extension-sum}.
+Then we defined \( \mu(xX)=\mu(x) \), and further
+extended \( \mu \) in a \( \sg \)-additive way to all elements of the algebra \( \cF \).
+Now Caratheodory's theorem allows us to extend it uniquely to all Borel sets,
+and thus to define a measureable space \( (X,\cA,\mu) \).
+
+Of course, all null sets in \( \cA \) get measure 0.
+
+Open,  closed and measureable sets can also be defined in the set of real numbers.
+
+% Gacs source line 3275
+\begin{definition}
+  \label{def:g2.3.16}
+  \notready
+  A subset \( G\sbsq\dR \) is \df{open} if it is the union of a set of open
+  intervals \( \opint{a_{i}}{b_{i}} \).
+It is \df{closed} if its complement is open.
+
+The set \( \cB \) of \df{Borel sets} of \( \dB \) is defined as the smallest
+\( \sg \)-algebra containing all open sets.
+\end{definition}
+
+The pair \( (\dR,\cB) \) is another example of a measureable space.
+
+% Gacs source line 3286
+\begin{definition}[Lebesgue measure]
+  \label{def:g2.3.17}
+  \notready
+Consider the set left-closed intervals of the line (including intervals
+of the form \( \opint{-\infty}{a} \).
+Let \( \cL \) be the set of finite disjoint unions of such intervals.
+This is an algebra.
+We define the function \( \lg \) over \( \cL \) as follows:
+\( \lg(\bigcup_{i} \lint{a_{i}}{b_{i}}) = \sum_{i} b_{i} - a_{i} \).
+It is easy to check that this is a \( \sg \)-additive measure and therefore by
+Caratheodory's theorem can be extended to the set \( \cB \) of all Borel sets.
+This function is called the \df{Lebesgue measure} over \( \dR \), giving us the
+measureable space \( (\dR,\cB,\lg) \).
+\end{definition}
+
+Finally, we can define the notion of a measureable function over \( X \).
+
+% Gacs source line 3301
+\begin{definition}[Measureable functions]
+  \label{def:g2.3.18}
+  \notready
+A function \( f:X\to \dR \) is called \df{measureable} if and only if
+\( f^{-1}(E)\in\cA \) for all \( E\in\cB \).
+\end{definition}
+
+The following is easy to prove.
+
+% Gacs source line 3308
+\begin{proposition}
+  \label{prop:g2.3.19}
+  \notready
+Function \( f:X\to\dR \) is measureable if and only if all sets of the form
+\( f^{-1}(\opint{r}{\infty})=\setof{x: f(x)>r} \) are measureable, where \( r \) is a
+rational number.
+\end{proposition}
+
+\subsection{Computability}
+
+\begin{formalization}
+Not formalized (see the note at the start of Subsection 2.3.2). Lower semicomputable
+functions on \( X \) enter the formalization only as tests, through their values on prefixes
+(Definition~\ref{def:g2.3.29}).
+\end{formalization}
+
+Measureable functions are quite general; it is worth introducing some more
+resticted kinds of function over the set of sequences.
+
+% Gacs source line 3320
+\begin{definition}
+  \label{def:g2.3.20}
+  \notready
+  A function \( f:X\to\dR \) is \df{continuous} if and only if for every \( x\in X \), for
+every \( \eps>0 \) there is a cylinder set \( C\ni x \) such that \( |f(y)-f(x)|<\eps \) for all
+\( y\in C \).
+
+  A function \( f:X\to\dR \) is \df{lower semicontinuous} if for every \( r\in\dR \) the set
+\( \setof{x\in X: f(x)>r} \) is open.
+ It is \df{upper semicontinuous} if \( -f \) is lower semicontinuous.
+\end{definition}
+
+The following is easy to verify.
+
+% Gacs source line 3332
+\begin{proposition}
+  \label{prop:g2.3.21}
+  \notready
+A function \( f:X\to\dR \) is continuous if and only if it is both upper and lower semicontinuous.
+\end{proposition}
+
+% Gacs source line 3336
+\begin{definition}
+  \label{def:g2.3.22}
+  \notready
+  A function \( f:X\to\dR \) is \df{computable} if for every open rational interval
+\( \opint{u}{v} \) the set \( f^{-1}(\opint{u}{v}) \) is a constructive open set of
+\( X \), uniformly in \( u,v \).
+\end{definition}
+
+Informally this means that if for the infinite sequence \( \xi\in X \) we have
+\( u<f(\xi)<v \) then from \( u,v \) sooner or later we will find a prefix \( x \)
+of \( \xi \) with the property \( u<f(xX)<v \).
+
+% Gacs source line 3346
+\begin{definition}
+  \label{def:g2.3.23}
+  \notready
+A function \( f:X\to\dR \) is \df{lower semicomputable}
+if for every rational \( r \) the set \( \setof{s\in X: f(s)>r} \)
+is a constructive open set of \( X \), uniformly in \( r \).
+It is \df{upper semicomputable} if \( -f \) is lower semicomputable.
+\end{definition}
+
+The following is easy to verify.
+
+% Gacs source line 3355
+\begin{proposition}
+  \label{prop:g2.3.24}
+  \notready
+  A function \( X\to\dR \) is computable if and only if it is both lower and upper
+  semicomputable.
+\end{proposition}
+
+\subsection{Integral}
+
+\begin{formalization}
+Not formalized (see the note at the start of Subsection 2.3.2).
+\end{formalization}
+
+The definition of integral over a measure space is given in the
+Appendix, in Subsection~A.2.3.
+Here, we give an exposition specialized to infinite sequences.
+
+% Gacs source line 3366
+ \begin{definition}
+  \label{def:g2.3.25}
+  \notready
+A measurable function \( f : X \to \dR \) is called a \df{step function} if
+its range is finite.
+The set of step functions will be called \( \cE \).
+
+Given a step function \( f \) which takes values \( x_{i} \) on sets \( A_{i} \), and a
+finite measure \( \mu \), we define
+ \[
+ \mu(f) = \mu f = \int f\,d\mu = \int f(x) \mu(d x)
+   = \sum_{i} x_{i} \mu(A_{i}).
+ \]
+ \end{definition}
+
+Proposition~A.2.14, when specified to our situation here, says
+the following.
+
+% Gacs source line 3382
+ \begin{proposition}\label{propo:Riesz-extension-seqs}
+  \notready
+The functional \( \mu \) defined above on step functions
+can be extended to the set
+\( \cE_{+} \) of monotonic limits of nonnegative elements of \( \cE \), by
+continuity.
+The set \( \cE_{+} \) is the set of all nonnegative measurable functions.
+ \end{proposition}
+
+Now we extend the notion of integral to a wider class of functions.
+
+% Gacs source line 3392
+ \begin{definition}
+  \label{def:g2.3.27}
+  \notready
+A measurable function \( f \) is called \df{integrable} with respect to a finite
+measure \( \mu \) if \( \mu |f|^{+} < \infty \) and \( \mu |f|^{-} < \infty \).
+In this case, we define \( \mu f = \mu |f|^{+} - \mu |f|^{-} \).
+ \end{definition}
+
+It is easy to see that the
+mapping \( f\mapsto \mu f \) is linear when \( f \) runs through the set of
+measureable functions with \( \mu |f|<\infty \).
+
+The following is also easy to check.
+
+% Gacs source line 3404
+\begin{proposition}
+  \label{prop:g2.3.28}
+  \notready
+Let \( \mu \) be a computable measure.
+\begin{alphenum}
+   \item
+If \( f \) is computable then a program to compute
+\( \mu f \) can be found from the program to compute \( f \).
+   \item
+If \( f \) is lower semicomputable then a program to lower semicompute
+\( \mu f \) can be found from a program to lower semicompute \( f \).
+\end{alphenum}
+\end{proposition}
+
+\subsection{Randomness tests}
+
+We can now define randomness tests similarly to Section~\ref{sec:discrand}.
+
+% Gacs source line 3441
+ \begin{definition}
+  \label{def:g2.3.29}
+  \lean{Kolmogorov.Randomness.IsIntegrableSeqTest, Kolmogorov.Randomness.IsMLSeqTest, Kolmogorov.Randomness.IsUniversalIntegrableSeqTest, Kolmogorov.Randomness.seqVal, Kolmogorov.Randomness.levelIntegral}
+  \leanok
+  \uses{def:g2.3.5, def:g2.3.8, def:semicomputability}
+A function \( d:X\to\dR \) is an \df{integrable test}, or \df{expectation-bounded test}
+of randomness with respect to the probability measure \( P \)
+if it is lower semicomputable and satisfies the condition
+ \begin{equation} 	\label{eq:newtestcond-seq}
+   \int 2^{d(x)}P(dx) \le 1.
+ \end{equation}
+It is called a \df{Martin-L\"of test}, or \df{probability-bounded test},
+if instead of the latter condition
+only the weaker one is satisfied saying \( P(d(x)>m)<2^{-m} \) for each
+positive integer \( m \).
+
+It is \df{universal} if it dominates all other integrable tests to within an
+additive constant.
+Universal Martin-L\"of tests are defined in the same way.
+ \end{definition}
+
+\begin{formalization}
+A test on sequences is carried by a function \( T \) from strings to \( [0,\infty] \) that is
+lower semicomputable and monotone along prefixes. Its value on \( \xi \) is
+\( 2^{d(\xi)} = \sup_{n} T(\xi_{1:n}) \) (\texttt{seqVal T \( \xi \)}). The integral
+in~\eqref{eq:newtestcond-seq} becomes the supremum of the level sums
+\( \sum_{\len{z} = n} P(z) T(z) \) (\texttt{levelIntegral}), so \( T \) is integrable when
+every level sum is at most \( 1 \). The Martin-L\"of condition is
+\( P\setof{\xi : 2^{d(\xi)} > 2^{k}} \le 2^{-k} \) for every \( k \in \dN \), the set being the
+open set generated by \( \setof{z : T(z) > 2^{k}} \) (Definition~\ref{def:g2.3.8}).
+Universality is \( 2^{d} \le 2^{c} \cdot 2^{d_{0}} \) along every sequence. Universal
+Martin-L\"of tests are not defined, since no result uses them.
+\end{formalization}
+
+Randomness tests and constructive null sets are closely related.
+
+% Gacs source line 3460
+\begin{theorem}
+  \label{thm:g2.3.2}
+  \lean{Kolmogorov.Randomness.isConstructiveNull_seqVal_top, Kolmogorov.Randomness.exists_integrableSeqTest_of_constructiveNull, Kolmogorov.Randomness.IsIntegrableSeqTest.isMLSeqTest}
+  \leanok
+  \uses{def:g2.3.29, def:g2.3.13}
+  Let \( P \) be a computable probability measure
+over the set \( S=\Sg^{\infty} \).
+There is a correspondence between constructive null sets and
+randomness tests:
+  \begin{alphenum}
+    \item
+  For every randomness tests \( d \), the set \( N=\setof{\xi: d(\xi)=\infty} \) is a
+  constructive null set.
+    \item
+For every constructive null set \( N \) there is a randomness test \( d \) with
+\( N=\setof{\xi: d(\xi)=\infty} \).
+  \end{alphenum}
+\end{theorem}
+\begin{proof}
+  \proves{thm:g2.3.2}
+  \leanok
+Let \( d \) be a randomness test: then for each \( k \) the set \( G_{k}=\setof{\xi: d(\xi)>k} \) is a
+constructive open set, and by Markov's inequality
+(wich is proved in the continuous case just as in the discrete case)
+ we have \( P(G_{k})\le 2^{-k} \).
+The sets \( G_{k} \) witness that \( N \) is a constructive null set.
+
+Let \( N \) be a constructive null set with \( N\sbsq \bigcap_{k=1}^{\infty} G_{k} \),
+where \( G_{k} \) is a uniform sequence of constructive open sets with
+\( P(G_{k})=2^{-k} \).
+Without loss of generality assume that the sequence \( G_{k} \) is decreasing.
+Then the function \( d(\xi)=\sup\setof{k: \xi\in G_{k}} \) is lower semicomputable
+and satisfies \( P\setof{\xi:d(\xi)\ge k} \le 2^{-k} \), so it is a Martin-L\"of test.
+Just as in Proposition~\ref{propo:ml-integrable},
+it is easy to check that \( d(x)-2\log d(x) -c \) is an integrable test for some constant \( c \).
+\end{proof}
+
+\begin{formalization}
+Part~(a) is proved for every Martin-L\"of test, hence for every integrable test by Markov's
+inequality (\texttt{IsIntegrableSeqTest.isMLSeqTest}). Part~(b) is proved with \( \sbsq \) in
+place of \( = \), which is the direction Theorem~\ref{thm:univ-seq-test} needs, and with an
+integrable test built directly: if \( N \sbsq \bigcap_{m} G_{m} \) with
+\( P(G_{m}) \le 2^{-m} \), then \( T(z) = \sum_{m} 2^{m} \cdot 1[z \in G_{2m+2}] \), read on
+strings, has every level sum at most \( \sum_{m} 2^{m} 2^{-2m-2} < 1 \) and is infinite on
+\( N \). The correction \( d - 2\log d - c \) is not needed.
+\end{formalization}
+
+Just as there is a universal constructive null set, there are universal
+randomness tests.
+
+% Gacs source line 3493
+\begin{theorem}\label{thm:univ-integrable-test-seq}
+  \lean{Kolmogorov.Randomness.canonicalSeqTest, Kolmogorov.Randomness.canonicalSeqTest_isUniversal, Kolmogorov.Randomness.seqVal_le_exact, Kolmogorov.Randomness.seqVal_le_canonicalSeqTest_exact, Kolmogorov.Randomness.seqVal_le_exact'}
+  \leanok
+  \uses{def:g2.3.29, def:ch2-description}
+For a computable measure \( P \), there is a universal integrable test \( \ol\d_{P}(\xi) \).
+More exactly, the function \( \xi\mapsto\ol\d_{P}(\xi) \) is lower semicomputable, satisfies~\eqref{eq:newtestcond} and
+for all integrable tests \( d(\xi) \) for \( P \), we have
+ \begin{equation*}d(\xi) \lea \ol\d_{P}(\xi) + K(d) + K(P).
+ \end{equation*}
+ \end{theorem}
+The proof is similar to the proof Theorem~\ref{thm:univsem}
+on the existence of a universal constructive semimeasure.
+It uses the projection technique and a weighted sum.
+
+\begin{proof}
+  \proves{thm:univ-integrable-test-seq}
+  \leanok
+  \uses{thm:defic-charac-cpt-seqs, thm:ch2-exact-domination}
+\end{proof}
+
+\begin{formalization}
+The universal test is explicit, not a projection over an enumeration of tests:
+\( T_{P}(z) = \max_{y \prefix z} 2^{-K(y)}/P(y) \) (\texttt{canonicalSeqTest U P}), whose value
+along \( \xi \) is \( \sup_{n} 2^{-K(\xi_{1:n})}/P(\xi_{1:n}) \). It is integrable by the first
+half of the proof of Theorem~\ref{thm:defic-charac-cpt-seqs}, and it dominates every
+integrable test by the second half. With his constant:
+\( 2^{-K(y_{d})} 2^{-K(y_{P})} 2^{d(\xi)} \le 2^{c} \cdot 2^{\ol\d_{P}(\xi)} \) for
+descriptions \( y_{d} \) of the test and \( y_{P} \) of \( P \), where \( c \) depends on
+neither \( P \), \( d \) nor \( \xi \) (\texttt{seqVal\_le\_canonicalSeqTest\_exact}). Its proof
+reruns the second half uniformly in \( \ang{y_{d}, y_{P}} \) and ends with
+Theorem~\ref{thm:ch2-exact-domination}. The condition~\eqref{eq:newtestcond} in the statement
+is to be read as~\eqref{eq:newtestcond-seq}.
+\end{formalization}
+
+\subsection{Randomness and complexity}
+
+We hope for a result connecting complexity with randomness similar to
+Theorem~\ref{thm:univ-integrable-test}.
+Somewhat surprisingly, there is indeed such a result.
+This is a surprise since in an infinite sequence, arbitrarily large oscillations
+of any quantity depending on the prefixes are actually to be expected.
+
+% Gacs source line 3513
+ \begin{theorem}\label{thm:defic-charac-cpt-seqs}
+  \lean{Kolmogorov.Randomness.universalSeqTest_equiv, Kolmogorov.Randomness.complexityRatioSup, Kolmogorov.Randomness.seqVal_le_of_isIntegrableSeqTest, Kolmogorov.Randomness.canonicalSeqTest_isIntegrable, Kolmogorov.Randomness.levelIntegral_canonicalSeqTest_le}
+  \leanok
+  \uses{def:g2.3.29, def:K}
+Let \( X=\Sg^{\dN} \) be the set of infinite sequences.
+For all computable measures \( \mu \) over \( X \), we have
+ \begin{equation}\label{eq:defic-charac-seq}
+ \ol\d_{\mu}(\xi) \eqa \sup_{n}\Paren{-\log \mu(\xi_{1:n}) - K(\xi_{1:n})}.
+ \end{equation}
+Here, the constant in \( \eqa \) depends on the computable measure \( \mu \).
+ \end{theorem}
+
+% Gacs source line 3522
+ \begin{corollary}
+  \label{cor:g2.3.30}
+  \lean{Kolmogorov.Randomness.uniform_universalSeqTest_equiv, Kolmogorov.Randomness.complexityRatioSup_uniform, Kolmogorov.Randomness.isRandomSeq_uniform_iff}
+  \leanok
+  \uses{def:g2.3.29, def:g2.3.5}
+Let \( \lg \) be the uniform distribution over the set of infinite binary sequences.
+Then
+ \begin{equation}
+ \ol\d_{\lg}(\xi) \eqa \sup_{n}\Paren{n - K(\xi_{1:n})}.
+ \end{equation}
+ \end{corollary}
+\begin{proof}
+  \proves{cor:g2.3.30}
+  \leanok
+  \uses{thm:defic-charac-cpt-seqs, thm:univ-seq-test}
+\end{proof}
+In other words, an infinite binary sequence is random (with respect to the
+uniform distribution) if and only if
+the complexity \( K(\xi_{1:n}) \) of its initial
+segments of length \( n \) never decreases below \( n \) by more than an
+additive constant.
+
+\begin{formalization}
+For \( \lg \) the supremum is \( \sup_{n} 2^{n} \cdot 2^{-K(\xi_{1:n})} \)
+(\texttt{complexityRatioSup\_uniform}). The statement in words is the Levin--Schnorr theorem,
+\texttt{isRandomSeq\_uniform\_iff}: \( \xi \) is random for \( \lg \) if and only if there is a
+\( c \) with \( n \le K(\xi_{1:n}) + c \) for all \( n \).
+\end{formalization}
+
+% Gacs source line 3534
+ \begin{proof}[Proof of Theorem~\protect\ref{thm:defic-charac-cpt-seqs}]
+  \proves{thm:defic-charac-cpt-seqs}
+  \leanok
+  \uses{thm:coding, l:kraft}
+To prove \( \lea \), define the function
+ \[
+ f_{\mu}(\xi) = \sum_{s} 1_{sX}(\xi) \frac{\m(s \mvert \mu)}{\mu(s)}
+  = \sum_{n} \frac{\m(\xi_{1:n} \mvert \mu)}{\mu(\xi_{1:n})}
+  \ge \sup_{n} \frac{\m(\xi_{1:n} \mvert \mu)}{\mu(\xi_{1:n})}.
+ \]
+The function \( \xi \mapsto f_{\mu}(\xi) \)
+is lower semicomputable with \( \mu^{\xi} f_{\mu}(\xi) \le 1 \), and hence
+ \[
+  \ol\d_{\mu}(\xi) \gea \log f(\xi) \gea
+   \sup_{n}\Paren{-\log\mu(\xi_{1:n}) - K(\xi_{1:n} \mvert \mu)}.
+ \]
+
+The proof of \( \lea \) reproduces the proof of Theorem 5.2
+of~\cite{GacsExact80}.
+Let us abbreviate:
+ \begin{equation*}1_{y}(\xi) = 1_{yX}(\xi).
+ \end{equation*}
+Since \( \cei{d(\xi)} \) only takes integer values and is lower semicomputable,
+there are computable
+sequences \( y_{i} \in \Sg^{*} \) and \( k_{i} \in \dN \) with
+ \begin{align*}
+   2^{\cei{d(\xi)}} &= \sup_{i}\; 2^{k_{i}} 1_{y_{i}}(\xi) \ge
+  \frac{1}{2}\sum_{i} 2^{k_{i}} 1_{y_{i}}(\xi)
+ \end{align*}
+with the property that if \( i<j \) and \( 1_{y_{i}}(\xi)=1_{y_{j}}(\xi)=1 \) then
+\( k_{i}<k_{j} \).
+The inequality follows from the fact that for any finite sequence
+\( n_{1}<n_{2}<\dots \), \( \sum_{j} 2^{n_{j}} \le 2 \max_{j} 2^{n_{j}} \).
+The function \( \gm(y)=\sum_{y_{i}=y}2^{k_{i}} \) is lower semicomputable.
+With it, we have
+\begin{align*}
+\sum_{i} 2^{k_{i}} 1_{y_{i}}(\xi)  &= \sum_{y\in\Sg^{*}}1_{y}(\xi)\gm(y).
+ \end{align*}
+Since \( \mu 2^{\cei{d}} \le 2 \), we have \( \sum_{y}\mu(y)\gm(y) \le 2 \), hence
+\( \mu(y)\gm(y)\lem\m(y) \), that is \( \gm(y)\lem \m(y)/\mu(y) \).
+It follows that
+ \[
+   2^{d(\xi)} \lem \sup_{y \in \Sg^{*}}\; 1_{y}(\xi)\frac{\m(y)}{\mu(y)}
+  = \sup_{n} \frac{\m(\xi_{1:n})}{\mu(\xi_{1:n})}.
+ \]
+Taking logarithms, we obtain the \( \lea \) part of the theorem.
+ \end{proof}
+
+\begin{formalization}
+Formalized multiplicatively, with unconditional \( K(\xi_{1:n}) \) in place of
+\( K(\xi_{1:n} \mvert \mu) \): every universal integrable test \( T_{0} \) satisfies
+\( 2^{-c} R(\xi) \le \sup_{n} T_{0}(\xi_{1:n}) \le 2^{c} R(\xi) \), where
+\( R(\xi) = \sup_{n} 2^{-K(\xi_{1:n})}/\mu(\xi_{1:n}) \) and \( c \) depends on \( \mu \)
+(\texttt{universalSeqTest\_equiv}).
+\begin{itemize}
+\item The first half (his first ``\( \lea \)'' should read ``\( \gea \)'') is that
+  \( T_{\mu}(z) = \max_{y \prefix z} 2^{-K(y)}/\mu(y) \) is an integrable test
+  (\texttt{canonicalSeqTest\_isIntegrable}). A level sum regroups by prefixes into
+  \( \sum_{y} 2^{-K(y)} \le 1 \).
+\item The second half, that every integrable test \( T \) has
+  \( \sup_{n} T(\xi_{1:n}) \le 2^{c} R(\xi) \)
+  (\texttt{seqVal\_le\_of\_isIntegrableSeqTest}), follows his decomposition with the
+  enumeration made explicit. Level \( k \) is \( \setof{T > 2^{k+1}} \). A string \( z \)
+  hits level \( k \) if the stage-\( \len{z} \) approximation of \( T \), maximized over the
+  prefixes of \( z \), exceeds \( 2^{k+1} \); it is a first hit if no proper prefix hits. For
+  each \( k \) the first hits form a decidable prefix-free set, so
+  \( \gm(z) = \sum\setof{2^{k} : z \text{ is a first hit of level } k} \) is computable. A
+  layer-cake bound gives \( \sum_{z} \mu(z) \gm(z) \le 1 \), and the coding theorem gives
+  \( \gm \le 2^{c} \cdot 2^{-K}/\mu \).
+\end{itemize}
+\end{formalization}
+
+\subsection{Universal semimeasure, algorithmic probability}
+
+Universal semimeasures exist over infinite sequences just as in the discrete
+space.
+
+% Gacs source line 3584
+\begin{definition}
+  \label{def:g2.3.31}
+  \lean{Kolmogorov.Randomness.IsContSemimeasure}
+  \leanok
+  \uses{def:semicomputability}
+  A function \( \mu:\Sg^{*}\to\cR_{+} \) is a \df{semimeasure} if it satisfies
+ \begin{align*}
+     \mu(x)      &\ge\sum_{s\in\Sg}\mu(xs),
+\\ \mu(\Lg) &\le 1.
+ \end{align*}
+If it is lower semicomputable we will call the semimeasure \df{constructive}.
+\end{definition}
+These requirements imply, just as for measures,
+the following generalization to an arbitrary prefix-free
+set \( A\sbsq \Sg^{*} \):
+ \begin{align*}
+   \sum_{x\in A}\mu(x)\le 1.
+ \end{align*}
+
+\begin{formalization}
+For \( \Sg = \dB \), \texttt{IsContSemimeasure \( \mu \)} is \( \mu(\Lg) \le 1 \) and
+\( \mu(x0) + \mu(x1) \le \mu(x) \); constructive means, in addition, lower semicomputable.
+The bound for prefix-free sets is formalized for finite \( A \)
+(\texttt{sum\_le\_one\_of\_prefixFree}); the infinite case follows by taking suprema but is
+not stated.
+\end{formalization}
+
+Standard technique gives the following:
+
+% Gacs source line 3601
+\begin{theorem}[Universal semimeasure]
+  \label{thm:g2.3.5}
+  \lean{Kolmogorov.Randomness.univContSemimeasure_isUniversal, Kolmogorov.Randomness.exists_universalContSemimeasure, Kolmogorov.Randomness.IsUniversalContSemimeasure, Kolmogorov.Randomness.contSemimeasure_le_univ_exact}
+  \leanok
+  \uses{def:g2.3.31}
+  There is a universal constructive semimeasure \( \mu \), that is a
+constructive semimeasure with the property that for every other constructive
+semimeasure \( \nu \) there is a constant \( c_{\nu}>0 \) with
+\( \mu(x)\ge c_{\nu}\nu(x) \).
+\end{theorem}
+
+\begin{proof}
+  \proves{thm:g2.3.5}
+  \leanok
+  \uses{thm:univsem, thm:ch2-exact-domination}
+\end{proof}
+
+\begin{formalization}
+The construction is that of Theorem~\ref{thm:univsem}:
+\( M(x) = \sum_{i} 2^{-i-1} \nu_{i}(x) \), where \( \nu_{i} \) is the \( i \)-th lower
+semicomputable function, trimmed into a continuous semimeasure that equals it whenever it
+already is one. His trimming, which freezes an approximation once it violates the
+constraint, does not carry over: the lower approximations of a continuous semimeasure can
+violate \( \mu(x0) + \mu(x1) \le \mu(x) \) at finite stages. The formalization uses the
+construction of Zvonkin and Levin~\cite{ZvLe70} instead. At stage \( s \) it raises the
+values bottom-up, \( \varphi(x) = \max(\psi_{s}(x), \varphi(x0) + \varphi(x1)) \) on the
+strings of length at most \( s \), and freezes only when the root exceeds \( 1 \)
+(\texttt{trimSt}). The exact form \( 2^{-K(y)} \nu(x) \le 2^{c} M(x) \) for a description
+\( y \) of \( \nu \), with \( c \) independent of \( \nu \), is
+\texttt{contSemimeasure\_le\_univ\_exact}.
+\end{formalization}
+
+% Gacs source line 3608
+\begin{definition}
+  \label{def:g2.3.32}
+  \lean{Kolmogorov.Randomness.univContSemimeasure, Kolmogorov.Randomness.IsUniversalContSemimeasure}
+  \leanok
+  \uses{thm:g2.3.5}
+  Let us fix a universal constructive semimeasure over \( X \) and denote it by
+\( M(x) \).
+\end{definition}
+
+\begin{formalization}
+No semimeasure is fixed: as with \( U \) in Chapter~1, results take any \( M \) with
+\texttt{IsUniversalContSemimeasure M} as a hypothesis, and \texttt{univContSemimeasure} is one.
+\end{formalization}
+
+There is a graphical way to represent a universal semimeasure, via monotonic
+Turing machines, which can be viewed a generalization of self-delimiting
+machines.
+
+% Gacs source line 3617
+\begin{definition}
+  \label{def:g2.3.33}
+A Turing machine \( \cT \) is \df{monotonic} if it
+has no input tape or output tape, but can ask repeatedly for input symbols and can emit
+repeatedly output symbols.
+The input is assumed to be an infinite binary string, but it is not assumed that
+\( \cT \) will ask for all of its symbols, even in infinite time.
+If the finite or
+infinite input string is \( p=p_{1}p_{2}\dotsm \), the (finite or infinite) output string is
+written as \( T(p)\in\Sg^{*}\cup\Sg^{\dN} \).
+\end{definition}
+
+\begin{formalization}
+Not formalized yet. Monotonic machines, Definitions~\ref{def:g2.3.34} and~\ref{def:g2.3.35}
+and Theorem~\ref{thm:g2.3.6} are planned future work. Nothing else in the chapter depends on
+them.
+\end{formalization}
+
+Just as we can generalize self-delimiting machines to obtain the notion of
+monotonic machines, we can generalize algorithmic probability, defined for a
+discrete space, to a version defined for infinite sequences.
+Imagine the monotonic Turing machine \( \cT \) computing the function \( T(p) \)
+as in the definition, and assume that its input symbols come from coin-tossing.
+
+% Gacs source line 3634
+\begin{definition}[Algorithmic probability over infinite sequences]
+  \label{def:g2.3.34}
+  \uses{def:g2.3.33}
+For a string \( x\in\Sg^{*} \), let \( P_{T}(x) \) be the probability of \( T(\pi)\postfix x \),
+when \( \pi=\pi_{1}\pi_{2}\dotsm \) is the infinite coin-tossing sequence.
+\end{definition}
+
+We can compute
+ \begin{align*}
+  P_{T}(x)=\sum_{T(p) \postfix x, p\text{ minimal}} 2^{-\len{p}},
+ \end{align*}
+where ``minimal'' means that no prefix \( p' \) of \( p \) gives \( T(p')\postfix x \).
+This expression shows that \( P_{T}(x) \) is lower semicomputable.
+It is also easy to check that it is a semimeasure, so we have a constructive
+semimeasure.
+The following theorem is obtained using a standard construction:
+
+% Gacs source line 3649
+\begin{theorem}
+  \label{thm:g2.3.6}
+  \uses{def:g2.3.34, def:g2.3.31}
+Every constructive semimeasure \( \mu(x) \) can be represented as
+\( \mu(x)=P_{T}(x) \) with the help of an appropriate a monotonic machine \( \cT \).
+\end{theorem}
+
+\begin{formalization}
+Not formalized yet; planned future work. This is the one hard construction of the chapter, a
+monotone analogue of the Kraft--Chaitin theorem. No other result depends on it: the
+formalization works with \( M \) as a universal constructive semimeasure
+(Theorem~\ref{thm:g2.3.5}), never with a machine.
+\end{formalization}
+
+This theorem justifies the following.
+
+% Gacs source line 3656
+\begin{definition}
+  \label{def:g2.3.35}
+  \uses{thm:g2.3.6, def:g2.3.32}
+From now on we will call the universal semimeasure \( M(x) \) also
+the \df{algorithmic probability}.
+A monotonic Turing machine \( \cT \) giving \( P_{T}(x)=M(x) \) will be called an
+\df{optimal machine}.
+\end{definition}
+
+\begin{formalization}
+Not formalized yet: an optimal machine needs Theorem~\ref{thm:g2.3.6}. In the formalization
+the algorithmic probability is \( M \) of Definition~\ref{def:g2.3.32}.
+\end{formalization}
+
+We will see that \( -\log M(x) \) should also be considered a kind of
+description complexity:
+
+% Gacs source line 3666
+  \begin{definition}
+  \label{def:g2.3.36}
+  \lean{Kolmogorov.Randomness.univContSemimeasure}
+  \leanok
+  \uses{def:g2.3.32}
+Denote
+ \begin{align*}
+   KM(x) =-\log M(x).
+ \end{align*}
+  \end{definition}
+
+\begin{formalization}
+No \( KM \) is defined in Lean. Every statement about \( KM \) is made about
+\( M = 2^{-KM} \).
+\end{formalization}
+
+How does \( KM(x) \) compare to \( K(x) \)?
+
+% Gacs source line 3675
+\begin{proposition}\label{prop:KmHCompare}
+  \lean{Kolmogorov.Randomness.KM_bounds, Kolmogorov.Randomness.prefixComplexityWeight_le_univ, Kolmogorov.Randomness.univ_mul_length_le_prefixComplexityWeight, Kolmogorov.Randomness.extSum}
+  \leanok
+  \uses{def:g2.3.36, def:K}
+We have the bounds
+ \begin{align*}
+ KM(x) \lea K(x) \lea KM(x) + K(\len{x}).
+ \end{align*}
+\end{proposition}
+\begin{proof}
+  \proves{prop:KmHCompare}
+  \leanok
+  \uses{thm:g2.3.5, thm:coding, l:kraft}
+To prove \( KM(x)\lea K(x) \) define the lower semicomputable function
+ \begin{align*}
+   \mu(x) = \sup_{S}\sum_{y\in S}\m(xy),
+ \end{align*}
+By its definition this is a constructive semimeasure and it is
+\( \ge \m(x) \).
+This implies \( M(x)\gem \m(x) \), and thus \( KM(x)\lea K(x) \).
+
+For the other direction, define the following lower semicomputable function \( \nu \)
+over \( \Sg^{*} \):
+ \begin{align*}
+   \nu(x)=\m(\len{x})\cdot M(x).
+ \end{align*}
+To show that it is a semimeasure compute:
+ \begin{align*}
+   \sum_{x\in\Sg^{*}}\nu(x)=\sum_{n}\m(n)\sum_{x\in\Sg^{n}}M(x)\le\sum_{n}\m(n)\le 1.
+ \end{align*}
+It follows that \( \m(x)\gem\nu(x) \) and hence \( K(x) \lea KM(x)+K(\len{x}) \).
+\end{proof}
+
+\begin{formalization}
+Multiplicatively, with one constant: \( 2^{-K(x)} \le 2^{c} M(x) \) and
+\( M(x) \cdot 2^{-K(\len{x})} \le 2^{c} \cdot 2^{-K(x)} \) (\texttt{KM\_bounds}). For the first
+bound the formalization takes \( \mu(x) = \sum_{y} 2^{-K(xy)} \), the sum over all
+extensions of \( x \) (\texttt{extSum}), instead of a supremum over sets \( S \). It is a
+constructive continuous semimeasure because \( \sum_{x} 2^{-K(x)} \le 1 \).
+\end{formalization}
+
+\subsection{Randomness via algorithmic probability}
+
+Fix a computable measure \( P(x) \) over the space \( X \).
+Just as in the discrete case, the universal semimeasure gives rise to a
+Martin-L\"of test.
+
+% Gacs source line 3710
+\begin{definition}
+  \label{def:g2.3.38}
+  \lean{Kolmogorov.Randomness.ratioTest, Kolmogorov.Randomness.seqVal_ratioTest}
+  \leanok
+  \uses{def:g2.3.32, def:g2.3.5, def:g2.3.29}
+Denote
+ \begin{align*}
+ \d'_{P}(\xi) = \log\sup_{n}\frac{M(\xi_{1:n})}{P(\xi_{1:n})}.
+ \end{align*}
+\end{definition}
+
+By Proposition~\ref{prop:KmHCompare}, this function is
+is \( \gem\ol\d_{P}(\xi) \), defined in Theorem~\ref{thm:univ-integrable-test-seq}.
+It can be shown that it is no longer expectation-bounded.
+But the theorem below shows that it is still a Martin-L\"of
+(probability-bounded) test, so it defines the same infinite random sequences.
+
+\begin{formalization}
+\texttt{ratioTest \( \nu \) P} is defined for any continuous semimeasure \( \nu \) in place of
+\( M \), as the prefix maximum \( z \mapsto \max_{y \prefix z} \nu(y)/P(y) \); for
+\( \nu = M \) its value along \( \xi \) is \( 2^{\d'_{P}(\xi)} \). The comparison with
+\( \ol\d_{P} \) is \texttt{complexityRatioSup\_le\_ratioTest}, from the first bound of
+Proposition~\ref{prop:KmHCompare}. That \( \d'_{P} \) is in general not expectation-bounded is
+not formalized.
+\end{formalization}
+
+% Gacs source line 3723
+\begin{theorem}
+  \label{thm:g2.3.7}
+  \lean{Kolmogorov.Randomness.ratioTest_isMLSeqTest, Kolmogorov.Randomness.openMeasure_ratioTest_le, Kolmogorov.Randomness.complexityRatioSup_le_ratioTest, Kolmogorov.Randomness.isRandomSeq_iff_ratioTest}
+  \leanok
+  \uses{def:g2.3.38, def:g2.3.29}
+The function \( \d'_{P}(\xi) \) is a Martin-L\"of test.
+\end{theorem}
+\begin{proof}
+  \proves{thm:g2.3.7}
+  \leanok
+  \uses{def:g2.3.31, cor:g2.3.7}
+Lower semicomputability follows from the form of definition.
+By standard methods,
+produce a list of finite strings \( y_{1},y_{2},\dots \) with:
+\begin{alphenum}
+\item \( M(y_{i})/P(y_{i})>2^{m} \)
+\item The cylinder sets \( y_{i}X \) cover of \( G_{m} \), and are disjoint (thus the
+  set \( \{y_{1},y_{2},\dots\} \) is prefix-free).
+\end{alphenum}
+We have
+ \begin{align*}
+   P(G_{m})=\sum_{i}P(y_{i})<2^{-m}\sum_{i}M(y_{i})\le 2^{-m}.
+ \end{align*}
+\end{proof}
+
+\begin{formalization}
+The ``standard methods'' are made explicit. For each \( n \), the prefix-minimal strings
+\( y \) of length at most \( n \) with \( M(y)/P(y) > 2^{m} \) form a finite prefix-free set,
+so their total \( P \)-measure is at most \( 2^{-m} \sum_{i} M(y_{i}) \le 2^{-m} \)
+(\texttt{openMeasure\_ratioTest\_le}). The bound holds for every continuous semimeasure in
+place of \( M \); lower semicomputability is used only to make \( \d'_{P} \) lower
+semicomputable. That \( \d'_{P} \) defines the same random sequences as \( \ol\d_{P} \) is
+\texttt{isRandomSeq\_iff\_ratioTest}.
+\end{formalization}
+
+Just as in the discrete case, the universality of \( M(x) \) implies
+ \begin{align*}
+   KM(x) \lea -\log P(x) +K(P).
+ \end{align*}
+      On the other hand,
+ \begin{align*}
+   \sup_{n} -\log P(\xi_{1:n})-KM(\xi_{1:n})
+ \end{align*}
+is a randomness test.
+So for random \( \xi \), the value \( KM(\xi_{1:n}) \) remains within a constant of
+\( -\log P(x) \): it does not oscillate much.
+
+\begin{formalization}
+\( KM(x) \lea -\log P(x) \), with a constant depending on \( P \), is
+\texttt{seqMeasure\_le\_univ}. The form with \( K(P) \) follows from
+\texttt{contSemimeasure\_le\_univ\_exact} (Theorem~\ref{thm:g2.3.5}) applied to a description
+of \( P \), but is not stated. That \( KM(\xi_{1:n}) \) stays within a constant of
+\( -\log P(\xi_{1:n}) \) along a random \( \xi \) is \texttt{univ\_comparable\_on\_random}.
+\end{formalization}

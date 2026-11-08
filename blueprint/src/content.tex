@@ -1,5 +1,5 @@
-% Content of the blueprint for Chapter 1 of
-% Peter Gacs, "Descriptional Complexity and Randomness" (arXiv:2105.04704).
+% Content of the blueprint for Peter Gacs, "Descriptional Complexity and
+% Randomness" (arXiv:2105.04704).  This file holds Chapter 1 and inputs the rest.
 %
 % Statements and proofs are his, reproduced with the author's permission.
 % Each node carries the name of the corresponding Lean declaration.  Where our
@@ -209,6 +209,7 @@ No notation is introduced in Lean. Every statement carries its constant explicit
 The following simple upper bound holds.
  \begin{alphenum}  
   \item \label{thebd} For any natural number \( m \), we have 
+ \setcounter{equation}{2}% Gacs (1.3.3); an equation of his before it is not reproduced
  \begin{equation} C(m) \lea \log m. \label{eq:upbd}
  \end{equation}
  \item \label{howsharp}
@@ -825,6 +826,7 @@ of \( x \) with respect to \( y \).
   \lean{Kolmogorov.plainK_le_KPPlain_le_plainK_add_log, Kolmogorov.KP_le_condK_add_log, Kolmogorov.KPPlain_le_plainK_add_log}
   \leanok
   \uses{def:K, def:complexity} \label{thm:HK} 
+ \setcounter{equation}{2}% Gacs (1.6.3); an equation of his before it is not reproduced
  \begin{equation} K \lea H \lea J(K). 
  \end{equation}
  \end{theorem}
@@ -852,6 +854,7 @@ K(y \mvert x) \lea C_{F}(y \mvert x) \lea C(y \mvert x) + 2\log C(y \mvert x).
   \uses{def:semicomputability}
 A function \( w : S \to \clint{0}{1} \) is called a \df{semimeasure}
 over the space \( S \) if 
+ \setcounter{equation}{4}% Gacs (1.6.5); an equation of his before it is not reproduced
  \begin{equation} \label{eq:dscrsemi} 
   \sum_{x} w(x) \le 1. 
  \end{equation}
@@ -981,6 +984,7 @@ Not formalized. The library proves domination of every lower semicomputable semi
 
 % Gacs source line 1811
  \begin{proof}
+  \proves{thm:exact-domin}
   \uses{thm:univsem}
   \notready
 Let us repeat the proof of Theorem~\ref{thm:univsem}, using \( \m(p) \) in place
@@ -1031,6 +1035,7 @@ Not formalised; no formalised result depends on it.
 For any sequence \( l_{1},l_{2},\ldots \) of
 natural numbers, there is a prefix code with exactly these numbers as
 codeword lengths, if and only if
+ \setcounter{equation}{8}% Gacs (1.6.9); an equation of his before it is not reproduced
  \begin{equation}	\sum_{i} 2^{-l_{i}} \le 1. \label{eq:kraft} 
  \end{equation}
  \end{lemma}
@@ -1099,6 +1104,7 @@ The Lean version is finite and multiplicative: for finitely many weights it prod
 
 % Gacs source line 1908
  \begin{proof}
+  \proves{l:shannon-fano}
   \leanok
   \uses{def:code} We follow the construction above and cut off disjoint,
 adjacent (not necessarily binary) intervals \( I_{j} \) of length \( w_{j} \) from 
@@ -1163,6 +1169,7 @@ machine \( \cT \) gives out result \( x \) after receiving random bits as inputs
   \lean{Kolmogorov.aprioriMeasure}
   \leanok
   \uses{def:PT, def:m}From now on let us define
+ \setcounter{equation}{13}% Gacs (1.6.14); an equation of his before it is not reproduced
  \begin{equation}\label{eq:m(x)}
    \m(x) = P_{T}(x).
  \end{equation}
@@ -1217,6 +1224,7 @@ bounded by a universal constant.
   \uses{thm:coding, def:m}
  It is more convenient to prove equation~\eqref{eq:Hstat}
 in the form 
+ \setcounter{equation}{2}% Gacs (1.7.3); an equation of his before it is not reproduced
  \begin{equation} \label{eq:Hstatmult} 
  	2^{-n}f(x,n) \eqm \m(x,n)
  \end{equation}
@@ -1480,5 +1488,15 @@ finitely many places to obtain the desired function $G$.
  \end{proof}
 
 
+% ===========================================================================
+% Chapters 2-4 and the Solomonoff chapter live in their own files.
+% ===========================================================================
+\input{chapter2}
+\input{chapter3}
+\input{chapter4}
+\input{chapter6_solomonoff}
+
+
 \bibliographystyle{alpha}
 \bibliography{blueprint}
+

@@ -1,0 +1,305 @@
+% ===========================================================================
+% Chapter 6: Solomonoff induction (ours, not Gacs')
+% ===========================================================================
+% Gacs' manuscript has no chapter on prediction.  This chapter is the plan for
+% the next step after his Chapters 1-3: Solomonoff's convergence theorem, in
+% the form of Solomonoff (1978) and Hutter (2005), Chapter 3.  Statements and
+% proofs are written by us.  Nodes that reuse finished Lean results carry
+% \lean and \leanok; everything else is planned.
+%
+% Gacs' Chapter 5 (exercises) is not reproduced, so the chapter counter is set
+% to make this Chapter 6.  The theorem/lemma counters follow the convention of
+% the rest of the blueprint (see macros/common.tex).
+
+\setcounter{chapter}{5}
+\chapter{Solomonoff induction}
+
+This chapter is not part of G\'acs' manuscript (whose Chapter~5, exercises and problems,
+is not reproduced here). It plans the first step beyond his text: Solomonoff's theorem
+that the universal semimeasure \( M \) of Chapter~2 predicts the next bit of a sequence
+drawn from any computable measure \( \mu \), with a total expected squared error bounded
+by \( K(\mu) \ln 2 \)~\cite{Solomonoff78,Hutter05}. Its hardest ingredient, the domination
+\( M \ge 2^{-K(\mu)-c}\mu \) with a constant that depends on \( \mu \) only through its
+complexity, is already formalized (Theorem~\ref{thm:sol-dominance}); the rest is an
+inequality between quadratic error and relative entropy, and a telescoping sum.
+
+The statements follow Chapter~3 of Hutter, Quarel and Catt~\cite{HutterQuarelCatt24},
+specialized to the universal semimeasure and the binary alphabet. Each formalization note
+names the corresponding numbered result there (``Book:''). The book's background chapter
+(its Sections 2.5--2.7) is covered by G\'acs' Chapters~1--3 and is not repeated here.
+
+Throughout, \( \Sg = \{0,1\} \), strings are finite binary strings, \( \Lg \) is the empty
+string, and \( \ln \) is the natural logarithm. A \emph{measure} \( \mu \) is a function on
+strings with \( \mu(\Lg) = 1 \) and \( \mu(x) = \mu(x0) + \mu(x1) \) (Chapter~2: the
+measure of the cylinder of sequences extending \( x \)); a \emph{semimeasure} satisfies
+the inequalities of Definition~\ref{def:g2.3.31} instead.
+
+\section{Prediction with a semimeasure}
+
+\begin{definition}[Conditional probabilities]\label{def:sol-conditional}
+\uses{def:g2.3.31}
+For a semimeasure \( \nu \), a string \( x \) with \( \nu(x) > 0 \) and \( b \in \Sg \), let
+ \[
+  \nu(b \mvert x) = \frac{\nu(xb)}{\nu(x)}.
+ \]
+For a measure, \( \nu(0 \mvert x) + \nu(1 \mvert x) = 1 \); for a semimeasure the sum is
+at most \( 1 \), the defect being the conditional probability that the sequence ends
+after \( x \).
+\end{definition}
+
+\begin{formalization}
+Planned as a function \( \nu(xb)/\nu(x) \) in \( \mathbb{R}_{\ge 0}^{\infty} \) on the existing
+semimeasures (\texttt{Kolmogorov.Randomness.IsContSemimeasure}). For the universal
+semimeasure the denominator never vanishes: \( M \) dominates the uniform measure, so
+\( M(x) \ge 2^{-c-\len{x}} > 0 \). Book: Definition~3.1.2 and Theorem~3.1.8.
+\end{formalization}
+
+The complexity of a lower semicomputable semimeasure \( \nu \) is read through its
+descriptions (Definition~\ref{def:ch2-description}):
+ \[
+   K(\nu) = \min \setof{K(y) : y \text{ is a description of } \nu}.
+ \]
+\( K(\nu) \) is not a separate Lean definition. The statements quantify over all
+descriptions \( y \) of \( \nu \) and carry \( K(y) \), as the weight
+\texttt{prefixComplexityWeight U y} \( = 2^{-K(y)} \); taking the minimum over \( y \)
+gives the form with \( K(\nu) \).
+
+\begin{theorem}[Domination with the complexity of the dominated measure]
+\label{thm:sol-dominance}
+\lean{Kolmogorov.Randomness.contSemimeasure_le_univ_exact}
+\leanok
+\uses{def:ch2-description, def:g2.3.31, def:g2.3.32}
+There is a constant \( c \) such that for every constructive semimeasure \( \nu \), every
+description \( y \) of \( \nu \) and every string \( x \),
+ \[
+   2^{-K(y)}\,\nu(x) \le 2^{c} M(x).
+ \]
+In particular \( M(x) \ge 2^{-K(\nu)-c}\,\nu(x) \).
+\end{theorem}
+\begin{proof}
+\proves{thm:sol-dominance}
+\leanok
+\uses{thm:g2.3.5, thm:ch2-exact-domination}
+This is Theorem~\ref{thm:ch2-exact-domination} for the continuous case, with the universal
+semimeasure \( M \) in place of \( \m \). Let \( \nu_{z} \) be the semimeasure described by \( z \) (after trimming, every index
+describes a semimeasure). The function \( x \mapsto \sum_{z} 2^{-K(z)} \nu_{z}(x) \) is
+lower semicomputable, and it is a semimeasure: the defining inequalities hold term by
+term, and its value at \( \Lg \) is at most \( \sum_{z} 2^{-K(z)} \le 1 \) by Kraft's
+inequality. Universality of \( M \) gives a constant \( c \) with
+\( \sum_{z} 2^{-K(z)}\nu_{z}(x) \le 2^{c} M(x) \); keep the single term \( z = y \).
+\end{proof}
+
+\begin{formalization}
+G\'acs' Theorem~\ref{thm:g2.3.5} gives \( M \ge c_{\nu}\nu \) with an unspecified constant
+\( c_{\nu} \). The form above, with \( c_{\nu} = 2^{-K(\nu)-c} \), is the one Solomonoff's
+bound needs; it was proved in Chapter~2's formalization for this purpose
+(\texttt{Gacs\_Chapter\_2/Randomness/Descriptions.lean}). Book: Corollary~3.8.10, derived
+there from the equivalence of the machine and mixture definitions of \( M \) (its
+Theorem~3.8.8, which is G\'acs' Theorem~\ref{thm:g2.3.6}). Our \( M \) is defined as a
+mixture, so the proof above does not need that equivalence.
+\end{formalization}
+
+\section{Convergence in mean square}
+
+Fix a computable measure \( \mu \). For \( t \ge 1 \) let
+ \begin{align*}
+  s_{t} &= \sum_{x \in \Sg^{t-1}} \mu(x) \sum_{b \in \Sg}
+           \bigl(M(b \mvert x) - \mu(b \mvert x)\bigr)^{2},
+\\ d_{t} &= \sum_{x \in \Sg^{t-1}} \mu(x) \sum_{b \in \Sg}
+           \mu(b \mvert x) \ln\frac{\mu(b \mvert x)}{M(b \mvert x)},
+ \end{align*}
+the expected squared prediction error and the expected relative entropy at time \( t \),
+with the conventions \( 0 \cdot \text{anything} = 0 \) and \( 0 \ln 0 = 0 \).
+
+\begin{lemma}[Quadratic error is bounded by relative entropy]\label{lem:sol-entropy-ineq}
+Let \( y_{0}, y_{1} \ge 0 \) with \( y_{0} + y_{1} = 1 \), and \( z_{0}, z_{1} > 0 \) with
+\( z_{0} + z_{1} \le 1 \). Then
+ \[
+   (y_{0} - z_{0})^{2} + (y_{1} - z_{1})^{2}
+   \le y_{0} \ln\frac{y_{0}}{z_{0}} + y_{1} \ln\frac{y_{1}}{z_{1}}.
+ \]
+\end{lemma}
+\begin{proof}
+\proves{lem:sol-entropy-ineq}
+Add a third outcome: \( y' = (y_{0}, y_{1}, 0) \) and
+\( z' = (z_{0}, z_{1}, 1 - z_{0} - z_{1}) \) are probability distributions, and the
+relative entropy \( D(y' \Vert z') \) equals the right-hand side. Write
+\( a = y' - z' \). Since \( \sum_{i} a_{i} = 0 \), the positive and the negative entries of
+\( a \) both sum to \( \delta = \frac12 \sum_{i} \card{a_{i}} \), so
+\( \sum_{i} a_{i}^{2} \le 2\delta^{2} \). Pinsker's inequality gives
+\( D(y' \Vert z') \ge 2\delta^{2} \). Hence the left-hand side, which is at most
+\( \sum_{i} a_{i}^{2} \), is at most \( D(y' \Vert z') \).
+\end{proof}
+
+\begin{formalization}
+Planned. The Chapter~2 strategy notes record that Mathlib has \texttt{klDiv} with a
+chain rule but no Pinsker inequality. Pinsker for distributions on a three-point set
+suffices; alternatively the two-variable inequality can be proved directly by calculus
+(fix \( y \), minimize over \( z \)). Book: the inequality \( s_{t} \le d_{t} \) of
+Theorem~3.2.3, which follows from the general entropy inequality, Theorem~2.8.6; binary
+Pinsker is Lemma~2.8.1 there.
+\end{formalization}
+
+\begin{lemma}[Telescoping]\label{lem:sol-telescope}
+\uses{def:sol-conditional}
+Let \( \nu \) be a semimeasure with \( \nu(x) > 0 \) for all \( x \). Then for every
+\( n \),
+ \[
+   \sum_{t=1}^{n} \sum_{x \in \Sg^{t-1}} \mu(x) \sum_{b \in \Sg}
+     \mu(b \mvert x) \ln\frac{\mu(b \mvert x)}{\nu(b \mvert x)}
+   \le \sum_{x \in \Sg^{n}} \mu(x) \ln\frac{\mu(x)}{\nu(x)}.
+ \]
+\end{lemma}
+\begin{proof}
+\proves{lem:sol-telescope}
+For a string \( x = x_{1}\dotsm x_{n} \) with \( \mu(x) > 0 \), the products of the
+conditional probabilities telescope:
+\( \prod_{t} \mu(x_{t} \mvert x_{1:t-1}) = \mu(x) \) and
+\( \prod_{t} \nu(x_{t} \mvert x_{1:t-1}) = \nu(x)/\nu(\Lg) \). Taking logarithms and the
+expectation over \( x \) under \( \mu \), the left-hand side equals
+\( \sum_{x} \mu(x) \ln(\mu(x)/\nu(x)) + \ln\nu(\Lg) \), and \( \ln\nu(\Lg) \le 0 \).
+Regrouping the expectation over \( \Sg^{n} \) into the nested sums uses
+\( \mu(x) = \mu(x0) + \mu(x1) \).
+\end{proof}
+
+\begin{formalization}
+Planned, by induction on \( n \) over finite sums of real numbers; no measure theory on
+sequences is needed. Mathlib's \texttt{klDiv} is stated for measures; the direct
+finite-sum proof is probably shorter than going through it. Book: Lemma~3.2.4, which
+states the equality for the product of the conditional semi-probabilities.
+\end{formalization}
+
+\begin{lemma}[Domination bounds the relative entropy]\label{lem:sol-dominance-kl}
+If \( \nu(x) \ge 2^{-k}\mu(x) \) for all strings \( x \), then for every \( n \),
+ \[
+   \sum_{x \in \Sg^{n}} \mu(x) \ln\frac{\mu(x)}{\nu(x)} \le k \ln 2.
+ \]
+\end{lemma}
+\begin{proof}
+\proves{lem:sol-dominance-kl}
+Each logarithm is at most \( k \ln 2 \), and \( \sum_{x \in \Sg^{n}} \mu(x) = 1 \).
+\end{proof}
+
+\begin{theorem}[Solomonoff]\label{thm:solomonoff}
+\uses{thm:sol-dominance, def:sol-conditional}
+There is a constant \( c \) such that for every computable measure \( \mu \), every
+description \( y \) of \( \mu \) and every \( n \),
+ \[
+   \sum_{t=1}^{n} s_{t} \le (K(y) + c) \ln 2 .
+ \]
+In particular \( \sum_{t=1}^{\infty} s_{t} \le (K(\mu) + c) \ln 2 < \infty \).
+\end{theorem}
+\begin{proof}
+\proves{thm:solomonoff}
+\uses{lem:sol-entropy-ineq, lem:sol-telescope, lem:sol-dominance-kl}
+For each \( x \) with \( \mu(x) > 0 \), apply Lemma~\ref{lem:sol-entropy-ineq} with
+\( y_{b} = \mu(b \mvert x) \) and \( z_{b} = M(b \mvert x) \); the hypothesis
+\( z_{0} + z_{1} \le 1 \) holds because \( M \) is a semimeasure. This gives
+\( s_{t} \le d_{t} \). By Lemma~\ref{lem:sol-telescope} with \( \nu = M \),
+\( \sum_{t \le n} d_{t} \le \sum_{x \in \Sg^{n}} \mu(x) \ln(\mu(x)/M(x)) \). By
+Theorem~\ref{thm:sol-dominance}, \( M(x) \ge 2^{-(K(y)+c)}\mu(x) \), and
+Lemma~\ref{lem:sol-dominance-kl} with \( k = K(y) + c \) finishes the proof.
+\end{proof}
+
+\begin{formalization}
+Planned. The Lean statement will take \( \mu \) as a
+\texttt{Kolmogorov.Randomness.ComputableSeqMeasure} and \( M \) as any \( M \) with
+\texttt{IsUniversalContSemimeasure M}, and use real logarithms; the rest of the
+formalization avoids logarithms by working multiplicatively in
+\( \mathbb{R}_{\ge 0}^{\infty} \), which is not natural here. The constant \( c \) is the one
+of Theorem~\ref{thm:sol-dominance}. Book: Theorem~3.2.5 for an arbitrary Bayes mixture,
+with the bound \( \ln w_{\mu}^{-1} \) for the prior weight \( w_{\mu} \) of \( \mu \);
+Theorem~3.7.3 for the Solomonoff prior \( w_{\mu} = 2^{-K(\mu)} \); Theorem~3.8.11 for
+\( M \).
+\end{formalization}
+
+\begin{definition}[The measure on sequences]\label{def:sol-seq-measure}
+A measure \( \mu \) on strings extends uniquely to a probability measure on the Borel sets
+of \( \Sg^{\dN} \) whose value on the cylinder of \( x \) is \( \mu(x) \).
+\end{definition}
+
+\begin{formalization}
+Planned; this is Stage~K of the Chapter~2 plan (the bridge from
+\texttt{ComputableSeqMeasure} to \texttt{MeasureTheory.Measure (ℕ → Bool)}), which
+Chapter~2 itself did not need. Mathlib's Carath\'eodory extension or projective-limit
+constructions provide the extension.
+\end{formalization}
+
+\begin{corollary}[Convergence with probability one]\label{cor:solomonoff-as}
+\uses{def:sol-seq-measure}
+For every computable measure \( \mu \), with \( \mu \)-probability one over sequences
+\( \og \),
+ \[
+   M(\og_{t} \mvert \og_{1:t-1}) - \mu(\og_{t} \mvert \og_{1:t-1}) \to 0
+   \quad (t \to \infty).
+ \]
+\end{corollary}
+\begin{proof}
+\proves{cor:solomonoff-as}
+\uses{thm:solomonoff}
+The random variable \( S(\og) = \sum_{t} \sum_{b} (M(b \mvert \og_{1:t-1}) -
+\mu(b \mvert \og_{1:t-1}))^{2} \) has expectation \( \sum_{t} s_{t} < \infty \) by
+monotone convergence and Theorem~\ref{thm:solomonoff}, so it is finite almost surely, and
+then its terms tend to \( 0 \).
+\end{proof}
+
+\begin{formalization}
+Planned. Book: Corollary~3.3.2, which also gives the ratio form
+\( M(x_{t} \mvert x_{<t})/\mu(x_{t} \mvert x_{<t}) \to 1 \).
+\end{formalization}
+
+\section{Along random sequences}
+
+Corollary~\ref{cor:solomonoff-as} holds almost surely, but says nothing about a
+particular sequence. Chapter~2 gives the natural candidates: the \( \mu \)-random
+sequences of Definition~\ref{def:g2.3.14}. On them, \( M \) and \( \mu \) agree on
+prefixes up to a constant factor.
+
+\begin{theorem}[\( M \) and \( \mu \) are comparable along random sequences]
+\label{thm:sol-comparable}
+\lean{Kolmogorov.Randomness.univ_comparable_on_random}
+\leanok
+\uses{def:g2.3.14, def:g2.3.32}
+Let \( \mu \) be a computable measure and \( \og \) a \( \mu \)-random sequence. There is a
+constant \( c \) (depending on \( \mu \) and \( \og \)) such that for all \( n \),
+ \[
+   2^{-c}\mu(\og_{1:n}) \le M(\og_{1:n}) \le 2^{c}\mu(\og_{1:n}).
+ \]
+\end{theorem}
+\begin{proof}
+\proves{thm:sol-comparable}
+\leanok
+\uses{thm:g2.3.5, thm:g2.3.7, thm:g2.3.2}
+The left inequality is domination (Theorem~\ref{thm:g2.3.5}). For the right one,
+\( \sup_{n} M(\og_{1:n})/\mu(\og_{1:n}) \) is a Martin-L\"of test for \( \mu \)
+(Theorem~\ref{thm:g2.3.7}), so the set where it is infinite is a constructive null set
+(Theorem~\ref{thm:g2.3.2}), which a \( \mu \)-random sequence avoids.
+\end{proof}
+
+\begin{formalization}
+Book: Corollary~3.10.3, where the constant in the lower bound is \( 2^{-K(\mu)} \)
+(Theorem~\ref{thm:sol-dominance}) and the one in the upper bound is the randomness
+deficiency of \( \og \).
+\end{formalization}
+
+\begin{remark}
+Comparability of the joint probabilities does not give convergence of the conditional
+predictions on every random sequence: Hutter and Muchnik~\cite{HutterMuchnik07} construct
+a universal semimeasure whose predictions fail to converge on some \( \mu \)-random
+sequence, so convergence along every random sequence depends on the choice of \( M \).
+Statements of this kind, and randomness with respect to measures that are not computable,
+are where Chapter~4's uniform tests would become relevant; they are not on the path to
+AIXI.
+\end{remark}
+
+\section{Outlook}
+
+Two pieces connect this chapter to the agent setting. G\'acs' Theorem~\ref{thm:g2.3.6}
+(planned in Chapter~2) identifies \( M \) with the output distribution \( P_{U} \) of a
+universal monotone machine, which is the definition Solomonoff and Hutter use; the results
+above hold for any universal semimeasure and do not need it. The next step is to replace
+sequences by interaction histories: chronological semimeasures conditioned on actions,
+the universal mixture over computable environments, and the AIXI agent built on it,
+following Chapters~6--8 of~\cite{HutterQuarelCatt24} (agency, AIXI, optimality); its
+Chapters~10, 13 and~15 treat reflective oracles and the grain of truth, the
+computability of AIXI, and safety.

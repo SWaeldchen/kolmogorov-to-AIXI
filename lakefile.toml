@@ -4,7 +4,7 @@ keywords = ["math"]
 # Both libraries are default targets: `lake exe checkdecls`, which the blueprint CI
 # runs, imports every module of every library declared here, so a library that the
 # default build skips makes it fail with "unknown module prefix".
-defaultTargets = ["KolmogorovMathlib", "Gacs_Chapter_2"]
+defaultTargets = ["KolmogorovMathlib", "Gacs_Chapter_2", "Gacs_Chapter_3"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -35,3 +35,6 @@ name = "KolmogorovMathlib"
 
 [[lean_lib]]
 name = "Gacs_Chapter_2"
+
+[[lean_lib]]
+name = "Gacs_Chapter_3"

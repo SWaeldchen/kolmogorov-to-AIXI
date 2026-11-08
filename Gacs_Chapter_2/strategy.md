@@ -5,10 +5,14 @@ statements in `ℝ≥0∞`, no logarithms, explicit constants, numbering as in t
 PDF, every stage closed with an axiom check and a warning sweep. New Lean files go in
 a new subfolder `Gacs_Chapter_2/Randomness/`; existing files are not edited.
 
-Status (2026-09-11): **§2.1 and §2.2 (Tier 1) complete**: seven files in
-`Gacs_Chapter_2/Randomness/`, 2001 lines, axiom-clean, no warnings, no `sorry`. Stage C′
-(Theorem 2.2.3, Corollary 2.2.8, index-dependent constants) is the remaining part of §2.2.
-The Lean files live in the `Gacs_Chapter_2` Lake library (added to `lakefile.toml`). See §7.
+Status (2026-11-07, evening): **Chapter 2 complete, including Gács' explicit constants.**
+Every numbered theorem of §§2.1–2.3 is formalized except the optional Theorem 2.3.6
+(monotone machines, Stage J). The `K(d) + K(P)` constants (Tier 2) are done for Theorems
+2.2.1, 2.2.2, 2.2.3, Corollary 2.2.8 and Theorem 2.3.3, together with the exact domination
+`m ≥ 2^{-K(ν)} ν` and `M ≥ 2^{-K(ν)} ν`. There are 21 files in `Gacs_Chapter_2/Randomness/`,
+about 6400 lines, with no `sorry`. The seven files added on 2026-11-07 are warning-free and
+axiom-clean; older files still carry long-line lint warnings (`KMBounds.lean`). See §7 for
+the log and §9 for what remains.
 
 ## 1. What the chapter contains
 
@@ -139,13 +143,13 @@ an estimate of 3300; Section 1.4 at 704 for 600).
 | **A** | Test foundations, Prop 2.2.3 both directions — **done** (`ComputableMeasure.lean`, `MLToIntegrable.lean`) | 300 → 345 | 0 |
 | **B** | §2.1, Thm 2.1.1 — **done** (`MartinLofTest.lean`) | 350 → 372 | A, `Levin.lean` |
 | **C** | §2.2 Tier 1: Thm 2.2.1, Prop 2.2.5, Thm 2.2.2 — **done** (`UniversalTest.lean`, `Conservation.lean`); bridge to `CodedFiniteDistribution` not done | 800 → 573 | A, 0 |
-| **C′** | §2.2 Tier 2: constants `K(d) + K(P)` via indexed enumeration; Thm 2.2.3 and Cor 2.2.8 (randomized transformations `T(x,y)`) | 700 | C |
-| **D** | §2.3 string-level foundations: sequences, cylinders, measures on strings, uniform `λ`, open sets and their measure (Lemma 2.3.6, Cor 2.3.7, Prop 2.3.9), null sets, Prop 2.3.12 (countable union), constructive null sets, randomness | 900 | 0 |
-| **E** | §2.3.7: `IsContSemimeasure`, constructive, **Thm 2.3.5** universal `M` by adapted trimming; `KM`; Prop 2.3.37 `KM ≤⁺ K ≤⁺ KM + K(|x|)` | 1500 | 0, D |
-| **F** | Thm 2.3.1 universal constructive null set (projection over codes with measure-guarded enumeration) | 800 | D |
-| **G** | Thm 2.3.2 tests ↔ null sets; Thm 2.3.3 universal integrable test on sequences (Tier 1, then Tier 2) | 900 | D, F |
-| **H** | Thm 2.3.4 and Cor 2.3.30: `d_μ(ξ) =⁺ sup_n (−log μ(ξ_{1:n}) − K(ξ_{1:n}))`, randomness of a sequence ⇔ incompressibility of prefixes | 900 | G, coding theorem |
-| **I** | §2.3.8: Def 2.3.38 `d′_P`, Thm 2.3.7 (it is an ML-test), relation to `d_P` | 500 | E, G |
+| **C′** | Thm 2.2.3 and Cor 2.2.8 (randomized transformations `T(x,y)`) — **done, Tier 1** (`RandomizedConservation.lean`); constants `K(d) + K(P)` via indexed enumeration — **not done** | 700 → 314 (Tier 1) | C |
+| **D** | §2.3 string-level foundations: sequences, cylinders, measures on strings, uniform `λ`, open sets and their measure (Lemma 2.3.6, Cor 2.3.7, Prop 2.3.9), null sets, Prop 2.3.12 (countable union), constructive null sets, randomness — **done** (`Sequences.lean`, `SeqMeasure.lean`) | 900 → 560 | 0 |
+| **E** | §2.3.7: `IsContSemimeasure`, constructive, **Thm 2.3.5** universal `M` by adapted trimming; `KM`; Prop 2.3.37 `KM ≤⁺ K ≤⁺ KM + K(|x|)` — **done** (`ContTrim.lean`, `ContTrimComputable.lean`, `UniversalContSemimeasure.lean`, `KMBounds.lean`) | 1500 → 945 | 0, D |
+| **F** | Thm 2.3.1 universal constructive null set — **done** (`LevinSchnorr.lean`), *not* by measure-guarded enumeration but as `{R = ∞}` via Thms 2.3.2 and 2.3.3, see §7 | 800 → ~40 | D, G, H |
+| **G** | Thm 2.3.2 tests ↔ null sets — **done** (`SeqTest.lean`); Thm 2.3.3 universal integrable test on sequences — **done, Tier 1** (`LevinSchnorr.lean`) | 900 → 452 + part of H | D |
+| **H** | Thm 2.3.4 and Cor 2.3.30: `d_μ(ξ) =⁺ sup_n (−log μ(ξ_{1:n}) − K(ξ_{1:n}))`, randomness of a sequence ⇔ incompressibility of prefixes — **done** (`PrefixFreeMass.lean`, `LevinSchnorr.lean`) | 900 → 883 (with G's Thm 2.3.3 and F) | G, coding theorem |
+| **I** | §2.3.8: Def 2.3.38 `d′_P`, Thm 2.3.7 (it is an ML-test), relation to `d_P` — **done** (`RandomnessViaM.lean`) | 500 → 196 | E, G |
 | **J** | *Optional*: monotone machines, Def 2.3.34, **Thm 2.3.6** (every constructive semimeasure is some `P_T`) | 2000 | E |
 | **K** | *Optional*: bridge from string-level measures to `MeasureTheory.Measure (ℕ → Bool)` via Ionescu–Tulcea | 400 | D |
 
@@ -306,3 +310,138 @@ Chapter 1, so they are declared `_root_.Kolmogorov.IsRE.*` and dot notation on a
 value keeps working. Anything about our own types needs no such treatment.
 
 Nothing else changed; `lake build Gacs_Chapter_2` is green.
+
+### Backfill — §2.3 files committed without a log entry ("update missing proofs")
+
+Stages D and E, and Theorem 2.3.2, were committed without an entry here. Checked on
+2026-11-07: they build and contain no `sorry`. The main declarations:
+
+| Result (Gács label) | Lean name | File |
+|---|---|---|
+| Definition 2.3.1, cylinders, open sets by generators, compactness | `cylinder`, `openOf`, `exists_level_of_cylinder_subset` | `Sequences.lean` |
+| Definition 2.3.5 (measure on `Σ^ℕ`), computable measure, uniform `λ` | `IsSeqMeasure`, `ComputableSeqMeasure`, `uniformSeqMeasure` | `SeqMeasure.lean` |
+| Definition 2.3.8 (measure of an open set) | `openMeasure` (sup of level masses) | `SeqMeasure.lean` |
+| Lemma 2.3.6 (depends only on the open set) | `openMeasure_mono_openOf` | `SeqMeasure.lean` |
+| Prop 2.3.9, countable subadditivity | `openMeasure_iUnion_le`, `openMeasure_le_tsum` | `SeqMeasure.lean` |
+| Definitions 2.3.10, 2.3.13, 2.3.14; Prop 2.3.12 | `IsNullSet`, `IsConstructiveNull`, `IsRandomSeq`, `isNullSet_iUnion` | `SeqMeasure.lean` |
+| Definition 2.3.29 (tests on sequences), Markov | `IsIntegrableSeqTest`, `IsMLSeqTest`, `IsIntegrableSeqTest.isMLSeqTest` | `SeqTest.lean` |
+| **Theorem 2.3.2** (a), (b) | `isConstructiveNull_seqVal_top`, `exists_integrableSeqTest_of_constructiveNull` | `SeqTest.lean` |
+| Definition 2.3.31, **Theorem 2.3.5** (universal `M`) | `IsContSemimeasure`, `univContSemimeasure_isUniversal` | `UniversalContSemimeasure.lean` (+ `ContTrim*.lean`) |
+| Definition 2.3.36, **Proposition 2.3.37** | `KM_bounds` | `KMBounds.lean` |
+
+Corollary 2.3.7 (`P(G) = ∑ P(x)` for prefix-free generators) is not stated as an equality.
+Both inequalities exist: `openMeasure_le_tsum`, and from 2026-11-07
+`sum_le_levelMass_of_prefixFree`.
+
+### 2026-11-07 — §2.3 complete (Tier 1), Stages F, G, H, I, C′
+
+Four new files, 1393 lines: `PrefixFreeMass.lean` (244), `LevinSchnorr.lean` (639),
+`RandomnessViaM.lean` (196) and `RandomizedConservation.lean` (314, written by a parallel
+agent). All main theorems depend only on `[propext, Classical.choice, Quot.sound]`; a forced
+rebuild of the four files gives zero warnings; no `sorry`.
+
+| Result (Gács label) | Lean name | File |
+|---|---|---|
+| Thm 2.3.4, `≤` direction (the key lemma) | `seqVal_le_of_isIntegrableSeqTest` | `LevinSchnorr.lean` |
+| `R(ξ) = sup_n 2^{-K(ξ_{1:n})}/P(ξ_{1:n})` | `complexityRatioSup` | `LevinSchnorr.lean` |
+| Thm 2.3.4, `≥` direction (the test property) | `levelIntegral_canonicalSeqTest_le`, `canonicalSeqTest_isIntegrable` | `LevinSchnorr.lean` |
+| **Theorem 2.3.3** (universal integrable test on sequences) | `canonicalSeqTest_isUniversal` | `LevinSchnorr.lean` |
+| **Theorem 2.3.4** | `universalSeqTest_equiv` | `LevinSchnorr.lean` |
+| **Theorem 2.3.1** (universal constructive null set) | `isConstructiveNull_universalNull`, `subset_universalNull` | `LevinSchnorr.lean` |
+| random ⇔ `R(ξ) < ∞` | `isRandomSeq_iff` | `LevinSchnorr.lean` |
+| **Corollary 2.3.30** | `uniform_universalSeqTest_equiv` | `LevinSchnorr.lean` |
+| **Levin–Schnorr**: λ-random ⇔ `∃ c ∀ n, n ≤ K(ξ_{1:n}) + c` | `isRandomSeq_uniform_iff` | `LevinSchnorr.lean` |
+| Definition 2.3.38 (`δ'_P`) | `ratioTest` | `RandomnessViaM.lean` |
+| **Theorem 2.3.7** (`δ'` is an ML test) | `ratioTest_isMLSeqTest` | `RandomnessViaM.lean` |
+| `δ' ≥ d̄`, same random sequences | `complexityRatioSup_le_ratioTest`, `isRandomSeq_iff_ratioTest` | `RandomnessViaM.lean` |
+| `KM ≤⁺ −log P`; `KM ≈ −log P` along random sequences | `seqMeasure_le_univ`, `univ_comparable_on_random` | `RandomnessViaM.lean` |
+| transition, image measure | `ComputableTransition`, `ComputableTransition.image` | `RandomizedConservation.lean` |
+| **Theorem 2.2.3** | `transTest_isIntegrableTest`, `transTest_le_canonical` | `RandomizedConservation.lean` |
+| **Corollary 2.2.8** | `transition_deficiency_tail` | `RandomizedConservation.lean` |
+| Thm 2.2.2 as the deterministic case of 2.2.3 | `detTransition`, `det_canonical_image_le` | `RandomizedConservation.lean` |
+| combinatorics | `sum_le_levelMass_of_prefixFree`, `sum_le_one_of_prefixFree`, `sum_ext_take_mul`, `tsum_levels_le`, `le_of_forall_levels` | `PrefixFreeMass.lean` |
+| lsc of `x ↦ ∑_y g(x,y) h(y)` | `isLSC₁_tsum_mul`, `isLSC_swap` | `RandomizedConservation.lean` |
+
+**What was done differently from the plan.**
+
+- *One key lemma carries §2.3.* The plan had Stage F (Theorem 2.3.1) built by
+  measure-guarded enumeration, and Stage G's Theorem 2.3.3 by a projection over an
+  enumeration of trimmed tests. Neither is needed. The hard half of Theorem 2.3.4, that
+  every integrable test `T` satisfies `T(ξ) ≤ 2^c R(ξ)`, makes `max_{y⊑·} 2^{-K(y)}/P(y)`
+  universal (Theorem 2.3.3). Theorem 2.3.1 then follows from Theorem 2.3.2: every
+  constructive null set lies in `{T = ∞}` for an integrable `T`, so it lies in `{R = ∞}`.
+  The trade: the universal test is the explicit complexity test, not an abstract mixture.
+- *Gács' decomposition made decidable.* His proof of the key lemma writes `2^{⌈d⌉}` as
+  `sup_i 2^{k_i} 1_{y_i}` with the `k_i` increasing along every sequence, and leaves the
+  enumeration implicit. We use dyadic levels `{T > 2^{k+1}}`. A string *hits* level `k`
+  when the stage-`|z|` approximation, maximised over prefixes, exceeds `2^{k+1}`
+  (`hitB`). It is a *first hit* when no proper prefix hits (`firstB`). Tying the stage to
+  the length makes hits monotone along prefixes and first hits **decidable** and
+  prefix-free, with no minimality over an r.e. set. Then `γ(z) = ∑_{first hits} 2^k` is
+  computable, the layer cake gives `∑ P γ ≤ ∫ T ≤ 1`, and the coding theorem gives
+  `γ ≤ 2^c w/P`.
+- *Theorem 2.3.7 needs no enumeration either.* The measure bound
+  `P{δ' > 2^k} ≤ 2^{-k}` is pure combinatorics: prefix-minimal witnesses of length `≤ n`
+  form a finite prefix-free family, and a continuous semimeasure has mass `≤ 1` on such a
+  family. Universality and lower semicomputability are used only for the test's lsc
+  property and for the comparisons.
+- *Transitions are only required to be lsc* (Theorem 2.2.3). With rows summing to one,
+  this already implies computability (Prop 1.6.8 row by row), and it is exactly what the
+  proof consumes.
+- *Estimates.* F + G + H + I came in at about 1080 lines against a plan of 3100, because
+  the key lemma replaced two enumeration constructions.
+
+### 2026-11-07 (evening) — Tier 2: the constants `K(d) + K(P)`
+
+Three new files, 1047 lines: `Descriptions.lean` (353), `ExactSeqTest.lean` (298) and
+`ExactConservation.lean` (396). The last two were written by two parallel agents on top of
+the first. All main theorems depend only on `[propext, Classical.choice, Quot.sound]`; a
+forced rebuild gives zero warnings; no `sorry`.
+
+| Result (Gács label) | Lean name | File |
+|---|---|---|
+| description of an lsc function; every lsc function has one | `IsLSCDescription`, `exists_lscDescription` | `Descriptions.lean` |
+| indexed domination (the engine) | `indexed_domination`, `indexed_domination_trim`, `contIndexed_domination` | `Descriptions.lean` |
+| `K(⟨y, y'⟩) ≤⁺ K(y) + K(y')` | `exists_pairCode_weight` | `Descriptions.lean` |
+| exact coding theorem `m(x) ≥ 2^{-K(ν)} ν(x)` (§1.6, used in 2.2.1) | `semimeasure_le_exact` | `Descriptions.lean` |
+| `M(x) ≥ 2^{-K(ν)} ν(x)` for continuous `ν` (§2.3.7) | `contSemimeasure_le_univ_exact` | `Descriptions.lean` |
+| **Theorem 2.2.1** with `K(d) + K(P)` | `integrableTest_le_canonical_exact`, `…_exact'` (exponent form) | `Descriptions.lean` |
+| **Theorem 2.2.3** with `K(T) + K(P)` | `transTest_le_canonical_exact` | `ExactConservation.lean` |
+| **Corollary 2.2.8** with `K(T) + K(P)` | `transition_deficiency_tail_exact` | `ExactConservation.lean` |
+| **Theorem 2.2.2** with `K(f) + K(P)` | `det_canonical_image_le_exact` | `ExactConservation.lean` |
+| **Theorem 2.3.3** with `K(d) + K(P)` | `seqVal_le_exact`, `seqVal_le_canonicalSeqTest_exact`, `seqVal_le_exact'` | `ExactSeqTest.lean` |
+
+**Design.**
+
+- *What `K(d)` means.* A bit string `y` describes an lsc function `f` (`IsLSCDescription y f`)
+  when the `bitsToNat y`-th component of the upstream enumeration of lsc approximations
+  (`approxEnum`, i.e. a `Nat.Partrec.Code`, monotonised as `enumApprox`) converges to `f`.
+  `K(f)` is read as `K(y)`. All statements quantify over descriptions, so they hold for a
+  shortest one. Transitions are described on encoded pairs
+  (`q ↦ T(decodeFirst q, decodeSecond q)`), maps by their graph indicator; both agree with
+  "a program for `T`/`f`" up to `O(1)`. `K(P)` needs only a *lower* description of `P`.
+- *One engine.* `indexed_domination_trim`: for any jointly lsc family `G(x, z)`,
+  `2^{-K(z)} G(x, z) ≤ 2^c 2^{-K(x)}` at every `z` where `G(·, z)` is a semimeasure. Proof:
+  trim with the upstream `truncG` (uniform in the context), mix with Kraft weights `2^{-K(z)}`
+  (`isLSC₁_tsum_mul`), apply the coding theorem. Each Tier-2 theorem is then one jointly lsc
+  family indexed by `z = pairCode y_d y_P` that equals the theorem's semimeasure at valid
+  `z`, plus `exists_pairCode_weight`. No code-level composition of programs is needed.
+- *Joint lower semicomputability of the families* goes through two plumbing lemmas,
+  `IsLSC.comp₁` (read a jointly lsc function along computable maps) and `IsLSC₁.toLSC₂`
+  (read a unary one at `pairCode x z`), so the unary lsc algebra (`mul`, `of_ratSeq`, …)
+  applies.
+- *`1/Q` for an image measure* is upper, not lower, semicomputable. When `Q` has total mass
+  one, `Q(y) = 1 − ∑_{y'≠y} Q(y')`, and `a ↦ (1 − a)⁻¹` preserves lsc
+  (`exact_isLSC₁_one_sub_inv`).
+- *Theorem 2.3.3* reruns the key lemma of `LevinSchnorr.lean` uniformly in `z`: the
+  computability of `hitB`/`firstB`/`gamN` is re-proved with a parameter
+  (`gamN_computable_param`).
+
+## 9. What remains in Chapter 2
+
+1. **Stage J, Theorem 2.3.6** (monotone machines realise every constructive semimeasure).
+   Optional; nothing depends on it.
+2. **Stage K**, the bridge to `MeasureTheory.Measure (ℕ → Bool)`. Optional.
+3. Smaller items: Corollary 2.3.7 as an equality; the remark that `δ'` is not
+   expectation-bounded (needs a counterexample); the bridge from `ComputableMeasure` to
+   the upstream `CodedFiniteDistribution`; long-line lint warnings in `KMBounds.lean`.
