@@ -37,18 +37,32 @@ jobs:
 
       # The API-docs step of docgen-action runs doc-gen4 on the whole import
       # closure (Mathlib included, ~6300 jobs), several processes at a time, and
-      # Lake has no option to lower that parallelism.  With three libraries it
-      # ran out of memory on the standard runner ("failed to execute doc-gen4:
-      # cannot allocate memory").  Extra swap on the large /mnt disk lets it
-      # finish instead of failing.
-      - name: Add swap space
+      # Lake has no option to lower that parallelism.  Since November 2026 it
+      # fails with "resource exhausted (error code: 12, cannot allocate memory)"
+      # when Lake starts a process; 16G of extra swap alone did not help.
+      # Under investigation: the steps below report the memory settings and the
+      # memory curve as annotations (readable without login through the
+      # check-runs API), and let the kernel overcommit, so that starting a
+      # process is not refused on accounting grounds.
+      - name: Add swap space and allow overcommit
         run: |
           sudo fallocate -l 16G /mnt/extra.swap
           sudo chmod 600 /mnt/extra.swap
           sudo mkswap /mnt/extra.swap
           sudo swapon /mnt/extra.swap
+          before="overcommit_memory=$(cat /proc/sys/vm/overcommit_memory) ratio=$(cat /proc/sys/vm/overcommit_ratio)"
+          sudo sysctl -w vm.overcommit_memory=1
+          meminfo=$(awk '/MemTotal|SwapTotal|CommitLimit|Committed_AS/{printf "%s%dM ", $1, $2/1024}' /proc/meminfo)
+          echo "::notice title=runner memory settings::${before} -> now $(cat /proc/sys/vm/overcommit_memory); ${meminfo}; nproc=$(nproc); max_map_count=$(cat /proc/sys/vm/max_map_count); $(. /etc/os-release; echo $PRETTY_NAME); kernel $(uname -r)"
           free -h
           df -h / /mnt
+
+      - name: Start memory monitor
+        run: |
+          nohup bash -c 'while true; do
+            echo "$(date +%T) $(awk "/MemAvailable|SwapFree|Committed_AS/{printf \"%s%d \", \$1, \$2/1024}" /proc/meminfo) $(ps -eo rss,comm --sort=-rss | sed -n 2,4p | awk "{printf \"%s:%dM \", \$2, \$1/1024}")"
+            sleep 15
+          done' > /tmp/memlog 2>&1 &
 
       - name: Checkout project
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -75,3 +89,16 @@ jobs:
         with:
           blueprint: true
           homepage: home_page
+
+      - name: Report memory curve
+        if: always()
+        run: |
+          log=/tmp/memlog
+          minavail=$(awk '{for(i=1;i<=NF;i++) if ($i ~ /^MemAvailable:/) {split($i,a,":"); print a[2]}}' $log | sort -n | head -1)
+          minswap=$(awk '{for(i=1;i<=NF;i++) if ($i ~ /^SwapFree:/) {split($i,a,":"); print a[2]}}' $log | sort -n | head -1)
+          maxcommit=$(awk '{for(i=1;i<=NF;i++) if ($i ~ /^Committed_AS:/) {split($i,a,":"); print a[2]}}' $log | sort -n | tail -1)
+          oom=$(sudo dmesg 2>/dev/null | grep -ci -E "out of memory|oom-kill" || true)
+          echo "::notice title=memory curve::samples=$(wc -l < $log) minMemAvailable=${minavail}M minSwapFree=${minswap}M maxCommitted_AS=${maxcommit}M oom_kills=${oom}"
+          echo "::notice title=memory at low point::$(awk '{for(i=1;i<=NF;i++) if ($i ~ /^MemAvailable:/) {split($i,a,":"); print a[2], $0}}' $log | sort -n | head -1 | cut -d' ' -f2-)"
+          echo "::notice title=memory, last samples::$(tail -4 $log | tr '\n' '|')"
+          cat $log
