@@ -39,25 +39,15 @@ jobs:
           swap-storage: false
 
       # The API-docs step of docgen-action runs doc-gen4 on the whole import
-      # closure (Mathlib included, ~6300 jobs).  The doc-gen4 processes reserve
-      # far more address space than they use: on 2026-11-08 the committed total
-      # peaked at ~300G while real use stayed under 4G of the 16G.  Under the
-      # default heuristic overcommit the kernel then refuses to start further
-      # processes ("resource exhausted (error code: 12, cannot allocate
-      # memory)").  Always allowing overcommit fixes it; extra swap does not.
+      # closure (Mathlib included, ~6300 jobs on a cold cache).  The doc-gen4
+      # processes reserve far more address space than they use: measured on
+      # 2026-11-08, the committed total peaked at 200-300G while real use stayed
+      # under 4G of the 16G.  Under the default heuristic overcommit the kernel
+      # then refuses to start further processes ("resource exhausted (error
+      # code: 12, cannot allocate memory)").  Always allowing overcommit fixes
+      # it; extra swap does not.
       - name: Allow memory overcommit
-        run: |
-          before="overcommit_memory=$(cat /proc/sys/vm/overcommit_memory)"
-          sudo sysctl -w vm.overcommit_memory=1
-          meminfo=$(awk '/MemTotal|SwapTotal|CommitLimit|Committed_AS/{printf "%s%dM ", $1, $2/1024}' /proc/meminfo)
-          echo "::notice title=runner memory settings::${before} -> now $(cat /proc/sys/vm/overcommit_memory); ${meminfo}; nproc=$(nproc); $(. /etc/os-release; echo $PRETTY_NAME); kernel $(uname -r)"
-
-      - name: Start memory monitor
-        run: |
-          nohup bash -c 'while true; do
-            echo "$(date +%T) $(awk "/MemAvailable|SwapFree|Committed_AS/{printf \"%s%d \", \$1, \$2/1024}" /proc/meminfo) $(ps -eo rss,comm --sort=-rss | sed -n 2,4p | awk "{printf \"%s:%dM \", \$2, \$1/1024}")"
-            sleep 15
-          done' > /tmp/memlog 2>&1 &
+        run: sudo sysctl -w vm.overcommit_memory=1
 
       - name: Checkout project
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -84,16 +74,3 @@ jobs:
         with:
           blueprint: true
           homepage: home_page
-
-      - name: Report memory curve
-        if: always()
-        run: |
-          log=/tmp/memlog
-          minavail=$(awk '{for(i=1;i<=NF;i++) if ($i ~ /^MemAvailable:/) {split($i,a,":"); print a[2]}}' $log | sort -n | head -1)
-          minswap=$(awk '{for(i=1;i<=NF;i++) if ($i ~ /^SwapFree:/) {split($i,a,":"); print a[2]}}' $log | sort -n | head -1)
-          maxcommit=$(awk '{for(i=1;i<=NF;i++) if ($i ~ /^Committed_AS:/) {split($i,a,":"); print a[2]}}' $log | sort -n | tail -1)
-          oom=$(sudo dmesg 2>/dev/null | grep -ci -E "out of memory|oom-kill" || true)
-          echo "::notice title=memory curve::samples=$(wc -l < $log) minMemAvailable=${minavail}M minSwapFree=${minswap}M maxCommitted_AS=${maxcommit}M oom_kills=${oom}"
-          echo "::notice title=memory at low point::$(awk '{for(i=1;i<=NF;i++) if ($i ~ /^MemAvailable:/) {split($i,a,":"); print a[2], $0}}' $log | sort -n | head -1 | cut -d' ' -f2-)"
-          echo "::notice title=memory, last samples::$(tail -4 $log | tr '\n' '|')"
-          cat $log
